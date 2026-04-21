@@ -1,5 +1,7 @@
 *.lic
 *.lock
+*.toml
+*.whl
 
 # Virtual environments
 venv/
