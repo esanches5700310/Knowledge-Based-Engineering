@@ -1,13 +1,22 @@
 import numpy as np
 from parapy import core as ppc
+from parapy.gui import display
 from geometry import Ship, Waterway, ArmourStone
 
-class ArmourStoneAssessment:
+class ArmourStoneAssessment(ppc.Base):
     inputPath = ppc.Input("input.py", doc="Path to the input file containing the parameters for the assessment. [str]")
 
-    ship = Ship()
-    waterway = Waterway()
-    armourStone = ArmourStone()
+    @ppc.Part
+    def ship(self):
+        return Ship()
+
+    @ppc.Part
+    def waterway(self):
+        return Waterway()
+
+    @ppc.Part
+    def armourStone(self):
+        return ArmourStone()
     
     @ppc.Attribute
     def delta(self):
@@ -34,7 +43,7 @@ class ArmourStoneAssessment:
         
         :return: Side slope term. [-]
         """
-        return (1 - (np.sin(self.waterway.alpha)**2 / np.sin(self.waterway.phi_as)**2))**0.5
+        return (1 - (np.sin(self.waterway.alpha)**2 / np.sin(self.waterway.phi_as)**2))**(0.5)
     
     @ppc.Attribute
     def k_l(self):
@@ -74,7 +83,19 @@ class ArmourStoneAssessment:
 
         return D
 
-
     def report(self):
-        # Generate and save the report.
+        """
+        Generate and save the report.
+        """
         pass
+
+    def run(self):
+        """
+        Run the assessment.
+        """
+        self.generateGeometry()
+        D_required = self.pilarczyk()
+        print(f"Required stone diameter according to Pilarczyk's formula: {D_required:.2f} m")
+
+test = ArmourStoneAssessment()
+test.run()

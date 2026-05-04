@@ -8,12 +8,12 @@ output_path = "output/report.txt"
 
 D_p = 1.0             # Diameter of the propeller. [m]
 Z_p = 5.0             # Propeller position, defined as the distance from the bed to the centre of the propeller. [m]
-keel_clearance = 0.5  # Distance from the bed to the lowest point of the hull. [m]
+keel_clearance = 5.5  # Distance from the bed to the lowest point of the hull. [m]
 draught = 4.5         # Distance from surface to lowest point of the hull. [m]
 
 ### Waterway variables ###
 
-depth = 5.0     # Depth of the waterway. [m]
+depth = 10.0     # Depth of the waterway. [m]
 d_slope = 20.0  # Distance to slope. [m]
 alpha = 30.0    # Angle of the slope. [deg]
 phi_as = 45.0   # Angle of repose of the armourstone. [deg]

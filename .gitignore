@@ -3,6 +3,9 @@
 *.toml
 *.whl
 
+# Cache
+__pycache__/
+
 # Virtual environments
 venv/
 .venv/
