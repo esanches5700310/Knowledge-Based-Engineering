@@ -10,9 +10,11 @@ class Ship:
 
 
 class Waterway:
-    depth = ppc.Input(depth, doc="Water depth. [m]")
+    h = ppc.Input(depth, doc="Water depth. [m]")
     d_slope = ppc.Input(d_slope, doc="Distance to slope. [m]")
-    slope = ppc.Input(slope, doc="Angle of the slope. [deg]")
+    alpha = ppc.Input(alpha, doc="Angle of the slope. [deg]")
+    phi_as = ppc.Input(phi_as, doc="Angle of repose of the armourstone. [deg]")
+    beta = ppc.Input(beta, doc="Longitudinal slope angle. [deg]")
 
 
 class ArmourStone:
@@ -20,46 +22,6 @@ class ArmourStone:
     density_water = ppc.Input(density_water, doc="Density of water. [kg/m^3]")
     psi_cr = ppc.Input(psi_cr, doc="Critical mobility parameter of the protection element. [-]")
     phi_sc = ppc.Input(phi_sc, doc="Stability correction factor. [-]")
-    h = ppc.Input(depth, doc="Water depth. [m]")
-    k_sl = ppc.Input(k_sl, doc="Side slope factor. [-]")
-    k_t = ppc.Input(k_t, doc="Turbulence factor. [-]")
+    k_t2 = ppc.Input(k_t2, doc="Square of the turbulence factor. [-]")
+    k_s = ppc.Attribute(doc="Roughness height of the armourstone. [m]")
     U = None # NEED TO GET THIS OUT OF CFD SIMULATION
-
-
-    @ppc.Attribute
-    def delta(self):
-        """
-        Calculate the relative buoyant density of the protection element.
-
-        :return: Relative buoyant density of the protection element. [-]
-        """
-        return self.density_rock / self.density_water - 1
-    
-    @ppc.Attribute
-    def k_h(self):
-        """
-        Calculate the velocity profile factor.
-
-        :return: Velocity profile factor. [-]
-        """
-        return 2 / (np.log(1 + 12 * self.h / self.k_s)**2)
-
-    def pilarczyk(self):
-        """
-        Calculate the required stone diameter according to Pilarczyk (1995).
-
-        :param phi_sc: Stability correction factor. [-]
-        :param delta: Relative buoyant density of the protection element. [-]
-        :param psi_cr: Critical mobility parameter of the protection element. [-]
-        :param k_h: Velocity profile factor. [-]
-        :param k_sl: Side slope factor. [-]
-        :param k_t: Turbulence factor. [-]
-        :param U: Depth-averaged flow velocity. [m/s]
-        :return: Characteristic size of the protection element [m]. D = D_n50 for armourstone.
-        """
-        g = 9.80665  # Acceleration due to gravity [m/s^2]
-
-        # Calculate the required stone diameter using Pilarczyk's formula
-        D = self.phi_sc / self.delta * 0.035 / self.psi_cr * self.k_h * self.k_sl**(-1) * self.k_t**2 * self.U**2 / (2 *g)
-
-        return D
