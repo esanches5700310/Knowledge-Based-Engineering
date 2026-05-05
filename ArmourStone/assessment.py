@@ -1,7 +1,8 @@
 import numpy as np
 from parapy import core as ppc
 from parapy.gui import display
-from geometry import Ship, Waterway, ArmourStone
+from objects import Ship, Waterway, ArmourStone
+from geometry import Geometry
 
 class ArmourStoneAssessment(ppc.Base):
     inputPath = ppc.Input("input.py", doc="Path to the input file containing the parameters for the assessment. [str]")
@@ -43,7 +44,7 @@ class ArmourStoneAssessment(ppc.Base):
         
         :return: Side slope term. [-]
         """
-        return (1 - (np.sin(self.waterway.alpha)**2 / np.sin(self.waterway.phi_as)**2))**(0.5)
+        return (1 - (np.sin(self.waterway.alpha_rad)**2 / np.sin(self.waterway.phi_as_rad)**2))**(0.5)
     
     @ppc.Attribute
     def k_l(self):
@@ -52,7 +53,7 @@ class ArmourStoneAssessment(ppc.Base):
 
         :return: Longitudinal slope term. [-]
         """
-        return np.sin(self.waterway.phi_as - self.waterway.beta) / np.sin(self.waterway.phi_as)
+        return np.sin(self.waterway.phi_as_rad - self.waterway.beta_rad) / np.sin(self.waterway.phi_as_rad)
 
     @ppc.Attribute
     def k_sl(self):
@@ -63,6 +64,7 @@ class ArmourStoneAssessment(ppc.Base):
         """
         return self.k_d * self.k_l
 
+    @ppc.Attribute
     def pilarczyk(self):
         """
         Calculate the required stone diameter according to Pilarczyk (1995).
@@ -80,9 +82,12 @@ class ArmourStoneAssessment(ppc.Base):
 
         # Calculate the required stone diameter using Pilarczyk's formula
         D = self.armourStone.phi_sc / self.delta * 0.035 / self.armourStone.psi_cr * self.k_h * self.k_sl**(-1) * self.armourStone.k_t2**2 * self.armourStone.U**2 / (2 * g)
-
         return D
-
+    
+    @ppc.Part
+    def geom(self): 
+        return Geometry(waterway=self.waterway, ship=self.ship)
+    
     def report(self):
         """
         Generate and save the report.
@@ -93,9 +98,10 @@ class ArmourStoneAssessment(ppc.Base):
         """
         Run the assessment.
         """
-        self.generateGeometry()
-        D_required = self.pilarczyk()
-        print(f"Required stone diameter according to Pilarczyk's formula: {D_required:.2f} m")
+        D_required = self.pilarczyk
+        print(f"Required stone diameter according to Pilarczyk's formula: {D_required} m")
 
 test = ArmourStoneAssessment()
 test.run()
+
+display(test)
