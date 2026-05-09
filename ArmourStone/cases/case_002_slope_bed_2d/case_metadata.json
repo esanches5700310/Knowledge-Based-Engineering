@@ -1,0 +1,14 @@
+{
+    "case_name": "case_002_slope_bed_2d",
+    "water_depth": 5.0,
+    "flat_bed_length": 10.0,
+    "slope_angle_deg": 29.36,
+    "slope_top_fraction": 1.0,
+    "slope_top_z": 5.0,
+    "slope_run": 8.888073320970355,
+    "total_length": 18.888073320970356,
+    "domain_width": 0.1,
+    "jet_velocity": 2.0,
+    "kinematic_viscosity": 1e-06,
+    "near_wall_height": 0.1
+}

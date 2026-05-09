@@ -1,0 +1,260 @@
+"""
+postprocess.py
+
+Reads the OpenFOAM results and extracts:
+- maximum velocity near the flat bed
+- maximum velocity near the upward side slope
+- governing velocity for the armour-stone calculation
+
+This script uses the latest OpenFOAM time folder.
+"""
+
+import csv
+import json
+import math
+import re
+from pathlib import Path
+
+
+CASE_NAME = "case_002_slope_bed_2d"
+
+VECTOR_PATTERN = re.compile(
+    r"\(\s*([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s*\)"
+)
+
+
+def armourstone_folder():
+    """Return the ArmourStone folder."""
+    return Path(__file__).resolve().parents[1]
+
+
+def case_folder():
+    """Return the OpenFOAM case folder."""
+    return armourstone_folder() / "cases" / CASE_NAME
+
+
+def output_folder():
+    """Return the folder where CFD results will be written."""
+    folder = armourstone_folder() / "output" / "cfd_results" / CASE_NAME
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def get_latest_time_folder(case_dir):
+    """Find the latest numeric OpenFOAM result folder."""
+    time_folders = []
+
+    for item in case_dir.iterdir():
+        if item.is_dir():
+            try:
+                time_value = float(item.name)
+                time_folders.append((time_value, item))
+            except ValueError:
+                pass
+
+    if not time_folders:
+        raise FileNotFoundError("No OpenFOAM time folders found.")
+
+    return max(time_folders, key=lambda pair: pair[0])[1]
+
+
+def read_metadata(case_dir):
+    """Read the case metadata written by case_generator.py."""
+    path = case_dir / "case_metadata.json"
+
+    if not path.exists():
+        raise FileNotFoundError(
+            "case_metadata.json was not found. "
+            "Run case_generator.py before post-processing."
+        )
+
+    return json.loads(path.read_text())
+
+
+def read_vector_file(path):
+    """Read only the internalField vectors from an OpenFOAM vector field file.
+
+    This is used for:
+    - U: velocity vectors
+    - C: cell centre coordinates
+
+    It ignores boundaryField vectors, because those are not cell values.
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+
+    text = path.read_text(errors="ignore")
+
+    # Find the number of internal field values
+    number_match = re.search(
+        r"internalField\s+nonuniform\s+List<vector>\s+(\d+)",
+        text
+    )
+
+    if number_match is None:
+        raise ValueError(f"Could not find internalField List<vector> in {path}")
+
+    number_of_vectors = int(number_match.group(1))
+
+    # Start reading after the internalField declaration
+    start_index = number_match.end()
+    remaining_text = text[start_index:]
+
+    # Read all vectors after that point
+    all_vectors = []
+
+    for match in VECTOR_PATTERN.finditer(remaining_text):
+        x = float(match.group(1))
+        y = float(match.group(2))
+        z = float(match.group(3))
+        all_vectors.append((x, y, z))
+
+    if len(all_vectors) < number_of_vectors:
+        raise ValueError(
+            f"Expected {number_of_vectors} vectors in {path}, "
+            f"but only found {len(all_vectors)}."
+        )
+
+    # Only keep the internalField values
+    vectors = all_vectors[:number_of_vectors]
+
+    return vectors
+
+
+def vector_magnitude(vector):
+    """Return magnitude of a 3D vector."""
+    x, y, z = vector
+    return math.sqrt(x * x + y * y + z * z)
+
+
+def bed_height_at_x(x, metadata):
+    """Return the bed/slope height for a given x-position."""
+    flat_length = metadata["flat_bed_length"]
+    total_length = metadata["total_length"]
+    slope_top_z = metadata["slope_top_z"]
+
+    if x <= flat_length:
+        return 0.0
+
+    slope_run = total_length - flat_length
+    distance_along_slope = x - flat_length
+
+    return distance_along_slope / slope_run * slope_top_z
+
+
+def distance_to_slope(x, z, metadata):
+    """Calculate distance from point (x, z) to the slope line."""
+    x1 = metadata["flat_bed_length"]
+    z1 = 0.0
+
+    x2 = metadata["total_length"]
+    z2 = metadata["slope_top_z"]
+
+    numerator = abs((z2 - z1) * x - (x2 - x1) * z + x2 * z1 - z2 * x1)
+    denominator = math.sqrt((z2 - z1) ** 2 + (x2 - x1) ** 2)
+
+    return numerator / denominator
+
+
+def extract_results():
+    """Extract near-bed and near-slope velocity results."""
+    case_dir = case_folder()
+    metadata = read_metadata(case_dir)
+
+    latest_dir = get_latest_time_folder(case_dir)
+
+    velocity_file = latest_dir / "U"
+    cell_centre_file = latest_dir / "C"
+
+    if not cell_centre_file.exists():
+        raise FileNotFoundError(
+            f"Cell centre file not found:\n{cell_centre_file}\n\n"
+            "This file is created with:\n"
+            "postProcess -func writeCellCentres -latestTime"
+        )
+
+    velocities = read_vector_file(velocity_file)
+    cell_centres = read_vector_file(cell_centre_file)
+
+    if len(velocities) != len(cell_centres):
+        raise ValueError("U and C files do not contain the same number of vectors.")
+
+    flat_bed_rows = []
+    slope_rows = []
+
+    flat_length = metadata["flat_bed_length"]
+    total_length = metadata["total_length"]
+    near_wall_height = metadata["near_wall_height"]
+
+    for centre, velocity in zip(cell_centres, velocities):
+        x, y, z = centre
+        u_mag = vector_magnitude(velocity)
+
+        # Check cells close to the flat bed
+        if 0.0 <= x <= flat_length:
+            if 0.0 <= z <= near_wall_height:
+                flat_bed_rows.append([x, y, z, *velocity, u_mag])
+
+        # Check cells close to the slope
+        if flat_length <= x <= total_length:
+            local_bed_z = bed_height_at_x(x, metadata)
+            distance = distance_to_slope(x, z, metadata)
+
+            if z >= local_bed_z and distance <= near_wall_height:
+                slope_rows.append([x, y, z, *velocity, u_mag])
+
+    max_flat_velocity = max([row[-1] for row in flat_bed_rows], default=0.0)
+    max_slope_velocity = max([row[-1] for row in slope_rows], default=0.0)
+    governing_velocity = max(max_flat_velocity, max_slope_velocity)
+
+    summary = {
+        "case_name": CASE_NAME,
+        "latest_time": latest_dir.name,
+        "number_of_flat_bed_samples": len(flat_bed_rows),
+        "number_of_slope_samples": len(slope_rows),
+        "max_flat_bed_velocity": max_flat_velocity,
+        "max_slope_velocity": max_slope_velocity,
+        "governing_velocity": governing_velocity,
+    }
+
+    write_csv("flat_bed_velocity_samples.csv", flat_bed_rows)
+    write_csv("slope_velocity_samples.csv", slope_rows)
+    write_summary(summary)
+
+    print_summary(summary)
+
+    return summary
+
+
+def write_csv(filename, rows):
+    """Write velocity samples to CSV."""
+    path = output_folder() / filename
+
+    header = ["x", "y", "z", "Ux", "Uy", "Uz", "U_magnitude"]
+
+    with path.open("w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        writer.writerows(rows)
+
+
+def write_summary(summary):
+    """Write summary results to JSON."""
+    path = output_folder() / "hydraulic_loading_summary.json"
+    path.write_text(json.dumps(summary, indent=4))
+
+
+def print_summary(summary):
+    """Print the main CFD results."""
+    print("\nCFD hydraulic loading summary")
+    print("-----------------------------")
+    print(f"Latest time:             {summary['latest_time']}")
+    print(f"Flat bed samples:        {summary['number_of_flat_bed_samples']}")
+    print(f"Slope samples:           {summary['number_of_slope_samples']}")
+    print(f"Max flat bed velocity:   {summary['max_flat_bed_velocity']:.4f} m/s")
+    print(f"Max slope velocity:      {summary['max_slope_velocity']:.4f} m/s")
+    print(f"Governing velocity:      {summary['governing_velocity']:.4f} m/s")
+
+
+if __name__ == "__main__":
+    extract_results()

@@ -1,0 +1,39 @@
+/*---------------------------------------------------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2206                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
+Arch   : "LSB;label=32;scalar=64"
+Exec   : postProcess -func writeCellCentres -latestTime
+Date   : May 09 2026
+Time   : 11:03:17
+Host   : 9b68f66bec6d
+PID    : 503
+I/O    : uncollated
+Case   : /work/cases/case_002_slope_bed_2d
+nProcs : 1
+trapFpe: Floating point exception trapping enabled (FOAM_SIGFPE).
+fileModificationChecking : Monitoring run-time modified files using timeStampMaster (fileModificationSkew 5, maxFileModificationPolls 20)
+allowSystemOperations : Allowing user-supplied system call operations
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+Create time
+
+Create mesh for time = 184
+
+Time = 184
+
+Reading fields:
+
+Executing functionObjects
+writeCellCentres writeCellCentres write:
+    writing cell-volumes field C to 184
+    Writing the x component field of the cell-centres Cx to 184
+    Writing the y component field of the cell-centres Cy to 184
+    Writing the z component field of the cell-centres Cz to 184
+
+End
+
