@@ -1,0 +1,33 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      sampleDict;
+}
+
+type sets;
+
+libs ("libsampling.so");
+
+interpolationScheme cellPoint;
+
+setFormat raw;
+
+sets
+(
+    bedLine
+    {
+        type uniform;
+        axis distance;
+        start (0 0.05 0.05);
+        end   (20 0.05 0.05);
+        nPoints 201;
+    }
+);
+
+fields
+(
+    U
+    p
+);
