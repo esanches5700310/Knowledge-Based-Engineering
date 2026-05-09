@@ -38,31 +38,13 @@ class ArmourStoneAssessment(ppc.Base):
         return 2 / (np.log(1 + 12 * self.waterway.h / self.armourStone.k_s)**2)
     
     @ppc.Attribute
-    def k_d(self):
-        """
-        Calculate the side slope term.
-        
-        :return: Side slope term. [-]
-        """
-        return (1 - (np.sin(self.waterway.alpha_rad)**2 / np.sin(self.waterway.phi_as_rad)**2))**(0.5)
-    
-    @ppc.Attribute
-    def k_l(self):
-        """
-        Calculate the longitudinal slope term.
-
-        :return: Longitudinal slope term. [-]
-        """
-        return np.sin(self.waterway.phi_as_rad - self.waterway.beta_rad) / np.sin(self.waterway.phi_as_rad)
-
-    @ppc.Attribute
     def k_sl(self):
         """
         Calculate the side slope factor.
 
         :return: Side slope factor. [-]
         """
-        return self.k_d * self.k_l
+        return (np.cos(self.waterway.psi_flow_rad) * np.sin(self.waterway.beta_rad) + np.sqrt(np.cos(self.waterway.beta_rad)**2 * np.tan(self.waterway.phi_as_rad)**2 - np.sin(self.waterway.psi_flow_rad)**2 * np.sin(self.waterway.beta_rad)**2)) / np.tan(self.waterway.phi_as_rad)
 
     @ppc.Attribute
     def pilarczyk(self):
