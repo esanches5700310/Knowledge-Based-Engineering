@@ -6,25 +6,24 @@ from parapy.geom import Polygon
 class Ship(ppc.Base):
     D_p = ppc.Input(D_p, doc="Diameter of the propeller. [m]")
     Z_p = ppc.Input(Z_p, doc="Propeller position, defined as the distance from the bed to the centre of the propeller. [m]")
-    #keel_clearance = ppc.Input(keel_clearance, doc="Distance from the bed to the lowest point of the hull. [m] ")
     draught = ppc.Input(draught, doc="Distance from surface to lowest point of the hull. [m]")
 
 
 class Waterway(ppc.Base):
     h = ppc.Input(depth, doc="Water depth. [m]")
     d_slope = ppc.Input(d_slope, doc="Distance to slope. [m]")
-    alpha = ppc.Input(alpha, doc="Angle of the slope. [deg]")
+    beta = ppc.Input(beta, doc="Side slope angle. [deg]")
     phi_as = ppc.Input(phi_as, doc="Angle of repose of the armourstone. [deg]")
-    beta = ppc.Input(beta, doc="Longitudinal slope angle. [deg]")
+    psi_flow = ppc.Input(psi_flow, doc="Angle made by the flow to the upslope direction. [deg]")
 
     @ppc.Attribute
-    def alpha_rad(self):
+    def beta_rad(self):
         """
         Convert the angle of the slope from degrees to radians.
 
         :return: Angle of the slope in radians. [rad]
         """
-        return np.radians(self.alpha)
+        return np.radians(self.beta)
     
     @ppc.Attribute
     def phi_as_rad(self):
@@ -36,13 +35,13 @@ class Waterway(ppc.Base):
         return np.radians(self.phi_as)
     
     @ppc.Attribute
-    def beta_rad(self):
+    def psi_flow_rad(self):
         """
-        Convert the longitudinal slope angle from degrees to radians.
+        Convert the angle made by the flow to the upslope direction from degrees to radians.
 
-        :return: Longitudinal slope angle in radians. [rad]
+        :return: Angle made by the flow to the upslope direction in radians. [rad]
         """
-        return np.radians(self.beta)
+        return np.radians(psi_flow)
 
     @ppc.Attribute
     def waterway_width(self):
@@ -51,7 +50,7 @@ class Waterway(ppc.Base):
 
         :return: Width of the waterway. [m]
         """
-        return self.h / np.tan(self.alpha_rad)
+        return self.h / np.tan(self.beta_rad)
 
 
 class ArmourStone(ppc.Base):
@@ -61,4 +60,4 @@ class ArmourStone(ppc.Base):
     phi_sc = ppc.Input(phi_sc, doc="Stability correction factor. [-]")
     k_t2 = ppc.Input(k_t2, doc="Square of the turbulence factor. [-]")
     k_s = ppc.Input(k_s, doc="Roughness height of the armourstone. [m]")
-    U = 1 # NEED TO GET THIS OUT OF CFD SIMULATION
+    U = 5 # NEED TO GET THIS OUT OF CFD SIMULATION
