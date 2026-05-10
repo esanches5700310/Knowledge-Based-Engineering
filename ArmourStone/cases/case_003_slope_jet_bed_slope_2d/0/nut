@@ -1,0 +1,48 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      nut;
+}
+
+dimensions      [0 2 -1 0 0 0 0];
+
+internalField   uniform 0;
+
+boundaryField
+{
+    jetInlet
+    {
+        type calculated;
+        value uniform 0;
+    }
+
+    returnOutlet
+    {
+        type calculated;
+        value uniform 0;
+    }
+
+    flatBed
+    {
+        type nutkWallFunction;
+        value uniform 0;
+    }
+
+    slope
+    {
+        type nutkWallFunction;
+        value uniform 0;
+    }
+
+    top
+    {
+        type symmetryPlane;
+    }
+
+    frontAndBack
+    {
+        type empty;
+    }
+}

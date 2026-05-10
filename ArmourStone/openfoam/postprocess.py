@@ -16,7 +16,7 @@ import re
 from pathlib import Path
 
 
-CASE_NAME = "case_002_slope_bed_2d"
+CASE_NAME = "case_003_slope_jet_bed_slope_2d"
 
 VECTOR_PATTERN = re.compile(
     r"\(\s*([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s*\)"

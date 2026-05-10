@@ -4,6 +4,12 @@ runner.py
 Runs the OpenFOAM case using Docker.
 
 This script should be run from WSL / Ubuntu, not from inside Docker.
+
+use:
+cd "/mnt/c/Users/estew/Documents/TU Delft/MSc Flight Performance/AE4204 Knowledge Based Engineering/Knowledge-Based-Engineering/ArmourStone"
+python3 openfoam/case_generator.py
+python3 openfoam/runner.py
+python3 openfoam/postprocess.py
 """
 
 import subprocess
@@ -11,8 +17,7 @@ from pathlib import Path
 
 
 DOCKER_IMAGE = "opencfd/openfoam-default:2206"
-CASE_NAME = "case_002_slope_bed_2d"
-
+CASE_NAME = "case_003_slope_jet_bed_slope_2d"
 
 def armourstone_folder():
     """Return the ArmourStone folder."""
