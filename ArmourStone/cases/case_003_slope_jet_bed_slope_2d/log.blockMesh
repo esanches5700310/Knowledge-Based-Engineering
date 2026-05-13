@@ -8,9 +8,9 @@
 Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : blockMesh
-Date   : May 10 2026
-Time   : 09:45:35
-Host   : 57208940d969
+Date   : May 11 2026
+Time   : 09:21:56
+Host   : f5f043d05955
 PID    : 500
 I/O    : uncollated
 Case   : /work/cases/case_003_slope_jet_bed_slope_2d
@@ -60,17 +60,17 @@ Creating patches
 Creating cells
 Creating points with scale (1 1 1)
     Block 0 cell size :
-        i : 0.07 .. 0.07
+        i : 0.05 .. 0.05
         j : 0.1 .. 0.1
         k : 0.04 .. 0.04
 
     Block 1 cell size :
-        i : 0.07 .. 0.07
+        i : 0.05 .. 0.05
         j : 0.1 .. 0.1
         k : 0.0533333 .. 0.0533333
 
     Block 2 cell size :
-        i : 0.07 .. 0.07
+        i : 0.05 .. 0.05
         j : 0.1 .. 0.1
         k : 0.18 .. 0.18
 
@@ -80,12 +80,12 @@ Creating points with scale (1 1 1)
         k : 0.04 .. 0.04
 
     Block 4 cell size :
-        i : 0.0106657 .. 0.0106657
+        i : 0.006 .. 0.006
         j : 0.1 .. 0.1
         k : 0.0533333 .. 0.0533333
 
     Block 5 cell size :
-        i : 0.0248866 .. 0.0248866
+        i : 0.014 .. 0.014
         j : 0.1 .. 0.1
         k : 0.18 .. 0.18
 
@@ -96,7 +96,7 @@ Writing polyMesh with 0 cellZones
 ----------------
 Mesh Information
 ----------------
-  boundingBox: (0 0 0) (15.8881 0.1 5)
+  boundingBox: (0 0 0) (10 0.1 5)
   nPoints: 20302
   nCells: 10000
   nFaces: 40150

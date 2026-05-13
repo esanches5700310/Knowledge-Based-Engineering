@@ -25,23 +25,23 @@ TEMPLATE_NAME = "slope_jet_bed_slope_2d"
 
 # Geometry [m, deg]
 WATER_DEPTH = 5.0
-FLAT_BED_LENGTH = 7.0
-SLOPE_ANGLE_DEG = 29.36
+FLAT_BED_LENGTH = 5
+SLOPE_ANGLE_DEG = 45
 SLOPE_TOP_FRACTION = 1.00
 DOMAIN_WIDTH = 0.1
 
 # Localized jet settings
 JET_CENTER_Z = 1.0
-JET_HEIGHT = 0.8 # this indicates the diameter of the jet velocity inlet
+JET_HEIGHT = 0.8 # this indicates the effective diameter of the jet velocity inlet
 
 # Flow settings
 JET_VELOCITY = 5.0
 KINEMATIC_VISCOSITY = 1.0e-6
 
-# Mesh settings
+# Mesh settings # TODO: create function that makes the mesh settings according to domain size
 CELLS_FLAT_X = 100
 CELLS_SLOPE_X = 100
-CELLS_Z = 50
+CELLS_Z = 500
 
 # Post-processing setting
 NEAR_WALL_HEIGHT = 0.10
@@ -109,7 +109,7 @@ def check_inputs():
     if not 0.0 < SLOPE_TOP_FRACTION <= 1.0:
         raise ValueError("SLOPE_TOP_FRACTION must be larger than 0 and at most 1.")
 
-    if not 5.0 <= SLOPE_ANGLE_DEG <= 60.0:
+    if not 5.0 <= SLOPE_ANGLE_DEG <= 80.0:
         raise ValueError("SLOPE_ANGLE_DEG should be between 5 and 60 degrees.")
 
     if DOMAIN_WIDTH <= 0:

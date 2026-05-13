@@ -8,9 +8,9 @@
 Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : checkMesh
-Date   : May 10 2026
-Time   : 09:45:35
-Host   : 57208940d969
+Date   : May 11 2026
+Time   : 09:21:56
+Host   : f5f043d05955
 PID    : 501
 I/O    : uncollated
 Case   : /work/cases/case_003_slope_jet_bed_slope_2d
@@ -72,19 +72,19 @@ Checking basic cellZone addressing...
     No cellZones found.
 
 Checking geometry...
-    Overall domain bounding box (0 0 0) (15.8881 0.1 5)
+    Overall domain bounding box (0 0 0) (10 0.1 5)
     Mesh has 2 geometric (non-empty/wedge) directions (1 0 1)
     Mesh has 2 solution (non-empty) directions (1 0 1)
     All edges aligned with or perpendicular to non-empty directions.
-    Boundary openness (1.76041e-18 -3.62586e-16 -1.05038e-17) OK.
-    Max cell openness = 7.62398e-15 OK.
-    Max aspect ratio = 56.2551 OK.
-    Minimum face area = 1.42209e-05. Maximum face area = 0.0367127.  Face area magnitudes OK.
-    Min volume = 1.42209e-06. Max volume = 0.00157106.  Total volume = 5.72202.  Cell volumes OK.
-    Mesh non-orthogonality Max: 60.5172 average: 28.7049
+    Boundary openness (2.67886e-18 7.10971e-16 2.33284e-18) OK.
+    Max cell openness = 3.38813e-15 OK.
+    Max aspect ratio = 100 OK.
+    Minimum face area = 8e-06. Maximum face area = 0.0254558.  Face area magnitudes OK.
+    Min volume = 8e-07. Max volume = 0.0009.  Total volume = 3.75.  Cell volumes OK.
+    Mesh non-orthogonality Max: 44.8564 average: 19.796
     Non-orthogonality check OK.
     Face pyramids OK.
-    Max skewness = 3.56012 OK.
+    Max skewness = 2.4875 OK.
     Coupled point location match (average 0) OK.
 
 Mesh OK.
