@@ -12,12 +12,20 @@ python3 openfoam/runner_3D.py
 python3 openfoam/postprocess_3D.py
 """
 
+import os
+import sys
 import subprocess
 from pathlib import Path
 
 
 DOCKER_IMAGE = "opencfd/openfoam-default:2206"
-CASE_NAME = "case_005_slope_jet_bed_slope_large_3d"
+DEFAULT_CASE_NAME = "case_005_slope_jet_bed_slope_large_3d"
+
+
+if len(sys.argv) > 1:
+    CASE_NAME = sys.argv[1]
+else:
+    CASE_NAME = os.environ.get("OPENFOAM_CASE_NAME", DEFAULT_CASE_NAME)
 
 
 def armourstone_folder():

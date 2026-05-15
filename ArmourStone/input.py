@@ -30,7 +30,35 @@ k_s = 0.3       # Roughness height of the armourstone. [m] (k_s = 1 to 3*D_n50 a
 
 ### CFD variables ###
 
-jet_velocity = 3.0          # Target propeller jet velocity used in OpenFOAM. [m/s]
-upstream_length = 20.0      # Distance upstream of the propeller in the CFD domain. [m]
-run_cfd = True             # If True, the app runs OpenFOAM automatically.
+run_cfd = True              # If True, the app runs OpenFOAM automatically.
 manual_velocity = 2.0       # Backup/design velocity used when run_cfd = False. [m/s]
+
+jet_velocity = 3.0          # Target propeller jet velocity used in OpenFOAM. [m/s]
+
+# Main physical CFD distance
+propeller_to_slope_distance = 5.0 # Distance from propeller centre to slope toe. [m]
+
+### CFD simulation selection ###
+
+openfoam_simulation_type = "2D"   # Choose "2D" or "3D"
+
+# Distance from left boundary to propeller centre
+# This is larger in 2D because the return flow is constrained in the x-z plane.
+cfd_left_boundary_to_propeller_2d = 20.0  # [m]
+
+# This can be smaller in 3D because the flow can spread laterally.
+cfd_left_boundary_to_propeller_3d = 1.0   # [m]
+
+# 3D CFD settings
+cfd_domain_width_3d = 12.0        # Width of the 3D CFD domain. [m]
+
+# Mesh settings: 2D
+cfd_cells_flat_x_2d = 240
+cfd_cells_slope_x_2d = 80
+cfd_cells_z_2d = 80
+
+# Mesh settings: 3D
+cfd_cells_flat_x_3d = 180
+cfd_cells_slope_x_3d = 60
+cfd_cells_y_3d = 36
+cfd_cells_z_3d = 50
