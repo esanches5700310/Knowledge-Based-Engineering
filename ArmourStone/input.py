@@ -27,3 +27,10 @@ phi_sc = 0.75   # Stability correction factor. [-] (0.75 for for continuous rock
 psi_cr = 0.035  # Critical mobility parameter of the protection element. [-] (0.035 for rip-rap and armourstone according to rock manual)
 k_t2 = 4        # Square of the turbulence factor. [-] (k_t^2 > 3 according to rock manual)
 k_s = 0.3       # Roughness height of the armourstone. [m] (k_s = 1 to 3*D_n50 according to rock manual)
+
+### CFD variables ###
+
+jet_velocity = 3.0          # Target propeller jet velocity used in OpenFOAM. [m/s]
+upstream_length = 20.0      # Distance upstream of the propeller in the CFD domain. [m]
+run_cfd = True             # If True, the app runs OpenFOAM automatically.
+manual_velocity = 2.0       # Backup/design velocity used when run_cfd = False. [m/s]

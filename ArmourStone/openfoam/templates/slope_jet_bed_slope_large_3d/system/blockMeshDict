@@ -1,0 +1,122 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+
+convertToMeters 1;
+
+// Coordinate system:
+// x = direction from propeller / inlet towards canal side slope
+// y = thin width direction for quasi-2D simulation
+// z = vertical direction, z = 0 at flat canal bed
+//
+// Geometry:
+// flat canal bed from x = 0 m to x = 10 m
+// upward side slope from x = 10 m to x = 18 m
+// still water level / top boundary at z = 5 m
+// slope rises from z = 0 m to z = 4.5 m
+//
+// Note:
+// The slope does not close exactly at the water surface in this CFD template.
+// A small outlet opening from z = 4.5 m to z = 5.0 m is kept for numerical stability.
+
+vertices
+(
+    // Flat-bed block
+    (0    0    0)      // 0
+    (10   0    0)      // 1
+    (10   0.1  0)      // 2
+    (0    0.1  0)      // 3
+
+    (0    0    5)      // 4
+    (10   0    5)      // 5
+    (10   0.1  5)      // 6
+    (0    0.1  5)      // 7
+
+    // Slope block
+    (18   0    4.5)    // 8
+    (18   0.1  4.5)    // 9
+    (18   0    5)      // 10
+    (18   0.1  5)      // 11
+);
+
+blocks
+(
+    // Flat horizontal bed region
+    hex (0 1 2 3 4 5 6 7) (100 1 50) simpleGrading (1 1 1)
+
+    // Upward side-slope region
+    hex (1 8 9 2 5 10 11 6) (100 1 50) simpleGrading (1 1 1)
+);
+
+edges
+(
+);
+
+boundary
+(
+    inlet
+    {
+        type patch;
+        faces
+        (
+            (0 4 7 3)
+        );
+    }
+
+    outlet
+    {
+        type patch;
+        faces
+        (
+            (8 9 11 10)
+        );
+    }
+
+    flatBed
+    {
+        type wall;
+        faces
+        (
+            (0 3 2 1)
+        );
+    }
+
+    slope
+    {
+        type wall;
+        faces
+        (
+            (1 8 9 2)
+        );
+    }
+
+    top
+    {
+        type symmetryPlane;
+        faces
+        (
+            (4 5 6 7)
+            (5 10 11 6)
+        );
+    }
+
+    frontAndBack
+    {
+        type empty;
+        faces
+        (
+            (0 1 5 4)
+            (3 7 6 2)
+            (1 8 10 5)
+            (2 6 11 9)
+        );
+    }
+);
+
+mergePatchPairs
+(
+);

@@ -7,6 +7,7 @@ class Ship(ppc.Base):
     D_p = ppc.Input(D_p, doc="Diameter of the propeller. [m]")
     Z_p = ppc.Input(Z_p, doc="Propeller position, defined as the distance from the bed to the centre of the propeller. [m]")
     draught = ppc.Input(draught, doc="Distance from surface to lowest point of the hull. [m]")
+    jet_velocity = ppc.Input(jet_velocity, doc="Target propeller jet velocity used in OpenFOAM. [m/s]")
 
 
 class Waterway(ppc.Base):
@@ -60,4 +61,4 @@ class ArmourStone(ppc.Base):
     phi_sc = ppc.Input(phi_sc, doc="Stability correction factor. [-]")
     k_t2 = ppc.Input(k_t2, doc="Square of the turbulence factor. [-]")
     k_s = ppc.Input(k_s, doc="Roughness height of the armourstone. [m]")
-    U = 5 # NEED TO GET THIS OUT OF CFD SIMULATION
+    U = ppc.Input(manual_velocity, doc="Hydraulic loading velocity. This can be replaced by CFD. [m/s]")

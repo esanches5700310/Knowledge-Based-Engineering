@@ -1,0 +1,27 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      topoSetDict;
+}
+
+actions
+(
+    {
+        name    propellerSet;
+        type    cellSet;
+        action  new;
+        source  boxToCell;
+        box     (19.6 0 0.8)
+                (20.4 0.1 1.6);
+    }
+
+    {
+        name    propellerZone;
+        type    cellZoneSet;
+        action  new;
+        source  setToCellZone;
+        set     propellerSet;
+    }
+);

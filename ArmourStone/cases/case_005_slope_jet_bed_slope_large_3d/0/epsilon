@@ -1,0 +1,46 @@
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       volScalarField;
+    object      epsilon;
+}
+
+dimensions      [0 2 -3 0 0 0 0];
+
+internalField   uniform 0.001;
+
+boundaryField
+{
+    farLeft
+    {
+        type symmetryPlane;
+    }
+
+    flatBed
+    {
+        type epsilonWallFunction;
+        value uniform 0.001;
+    }
+
+    slope
+    {
+        type epsilonWallFunction;
+        value uniform 0.001;
+    }
+
+    top
+    {
+        type symmetryPlane;
+    }
+
+    sideLeft
+    {
+        type symmetryPlane;
+    }
+
+    sideRight
+    {
+        type symmetryPlane;
+    }
+}

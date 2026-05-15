@@ -1,0 +1,23 @@
+{
+    "case_name": "case_kbe_2d",
+    "water_depth": 10.0,
+    "flat_bed_length": 40.0,
+    "slope_angle_deg": 30.0,
+    "slope_top_fraction": 1.0,
+    "slope_top_z": 10.0,
+    "slope_run": 17.320508075688775,
+    "total_length": 57.32050807568878,
+    "domain_width": 0.1,
+    "jet_velocity": 3.0,
+    "kinematic_viscosity": 1e-06,
+    "near_wall_height": 0.1,
+    "propeller_distance_to_slope_toe": 20.0,
+    "propeller_center_x": 20.0,
+    "propeller_x_min": 19.6,
+    "propeller_x_max": 20.4,
+    "propeller_center_z": 5.0,
+    "propeller_z_min": 4.5,
+    "propeller_z_max": 5.5,
+    "propeller_diameter": 1.0,
+    "propeller_zone_length": 0.8
+}

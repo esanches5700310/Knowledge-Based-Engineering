@@ -3,9 +3,14 @@ from parapy import core as ppc
 from parapy.gui import display
 from objects import Ship, Waterway, ArmourStone
 from geometry import Geometry
+from input import run_cfd, manual_velocity, upstream_length
+from openfoam.cfd_interface import make_cfd_settings_from_kbe, run_openfoam_workflow
 
 class ArmourStoneAssessment(ppc.Base):
     inputPath = ppc.Input("input.py", doc="Path to the input file containing the parameters for the assessment. [str]")
+    run_cfd = ppc.Input(run_cfd, doc="If True, run OpenFOAM automatically.")
+    manual_velocity = ppc.Input(manual_velocity, doc="Velocity used if OpenFOAM is not run. [m/s]")
+    upstream_length = ppc.Input(upstream_length, doc="Distance upstream of propeller in CFD domain. [m]")
 
     @ppc.Part
     def ship(self):
@@ -63,7 +68,7 @@ class ArmourStoneAssessment(ppc.Base):
         g = 9.80665  # Acceleration due to gravity [m/s^2]
 
         # Calculate the required stone diameter using Pilarczyk's formula
-        D = self.armourStone.phi_sc / self.delta * 0.035 / self.armourStone.psi_cr * self.k_h * self.k_sl**(-1) * self.armourStone.k_t2**2 * self.armourStone.U**2 / (2 * g)
+        D = self.armourStone.phi_sc / self.delta * 0.035 / self.armourStone.psi_cr * self.k_h * self.k_sl**(-1) * self.armourStone.k_t2**2 * self.hydraulic_velocity**2**2 / (2 * g)
         return D
     
     @ppc.Part
@@ -77,13 +82,43 @@ class ArmourStoneAssessment(ppc.Base):
         pass
 
     def run(self):
-        """
-        Run the assessment.
-        """
+        """Run the assessment."""
+        print("Running armour stone assessment")
+        print("-------------------------------")
+        print(f"Run CFD: {self.run_cfd}")
+        print(f"Hydraulic velocity used: {self.hydraulic_velocity:.4f} m/s")
+
         D_required = self.pilarczyk
-        print(f"Required stone diameter according to Pilarczyk's formula: {D_required} m")
+        print(f"Required stone diameter according to Pilarczyk's formula: {D_required:.4f} m")
 
-test = ArmourStoneAssessment()
-test.run()
+    @ppc.Attribute
+    def cfd_settings(self):
+        """Create the CFD settings from the KBE model inputs."""
+        return make_cfd_settings_from_kbe(
+            ship=self.ship,
+            waterway=self.waterway,
+            jet_velocity=self.ship.jet_velocity,
+            upstream_length=self.upstream_length,
+        )
 
-display(test)
+    @ppc.Attribute
+    def cfd_summary(self):
+        """Run OpenFOAM and return the postprocessed CFD summary."""
+        return run_openfoam_workflow(self.cfd_settings)
+
+    @ppc.Attribute
+    def hydraulic_velocity(self):
+        """Velocity used in the armour-stone calculation.
+
+        If run_cfd is False, use manual_velocity.
+        If run_cfd is True, run OpenFOAM and use the governing CFD velocity.
+        """
+        if self.run_cfd:
+            return self.cfd_summary["governing_velocity"]
+
+        return self.manual_velocity
+
+if __name__ == "__main__":
+    test = ArmourStoneAssessment()
+    test.run()
+    display(test)

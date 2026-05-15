@@ -1,23 +1,32 @@
 """
 runner.py
 
-Runs the OpenFOAM case using Docker.
+Runs an OpenFOAM case using Docker.
 
-This script should be run from WSL / Ubuntu, not from inside Docker.
+This script can be used in two ways:
 
-use:
-cd "/mnt/c/Users/estew/Documents/TU Delft/MSc Flight Performance/AE4204 Knowledge Based Engineering/Knowledge-Based-Engineering/ArmourStone"
-python3 openfoam/case_generator.py
-python3 openfoam/runner.py
-python3 openfoam/postprocess.py
+1. Manually from WSL / Ubuntu:
+   python3 openfoam/runner.py
+
+2. From the KBE app with a custom case name:
+   python3 openfoam/runner.py case_kbe_2d
 """
 
+import os
+import sys
 import subprocess
 from pathlib import Path
 
 
 DOCKER_IMAGE = "opencfd/openfoam-default:2206"
-CASE_NAME = "case_003_slope_jet_bed_slope_2d"
+DEFAULT_CASE_NAME = "case_004_slope_jet_bed_slope_large_2d"
+
+
+if len(sys.argv) > 1:
+    CASE_NAME = sys.argv[1]
+else:
+    CASE_NAME = os.environ.get("OPENFOAM_CASE_NAME", DEFAULT_CASE_NAME)
+
 
 def armourstone_folder():
     """Return the ArmourStone folder."""
@@ -30,7 +39,7 @@ def case_folder():
 
 
 def run_openfoam():
-    """Run blockMesh, checkMesh, simpleFoam and write cell centres."""
+    """Run blockMesh, checkMesh, topoSet, simpleFoam and write cell centres."""
 
     root = armourstone_folder()
     case_dir = case_folder()
@@ -41,7 +50,6 @@ def run_openfoam():
             "Run case_generator.py first."
         )
 
-    # Path of the case inside the Docker container
     docker_case_dir = f"/work/cases/{CASE_NAME}"
 
     commands_inside_docker = f"""
@@ -52,6 +60,9 @@ blockMesh > log.blockMesh 2>&1
 
 echo "Running checkMesh..."
 checkMesh > log.checkMesh 2>&1
+
+echo "Running topoSet..."
+topoSet > log.topoSet 2>&1
 
 echo "Running simpleFoam..."
 simpleFoam > log.simpleFoam 2>&1
@@ -88,15 +99,22 @@ echo "Done."
 
     if result.returncode != 0:
         print(result.stderr)
+        print_log_tail("log.blockMesh", 80)
+        print_log_tail("log.checkMesh", 80)
+        print_log_tail("log.topoSet", 80)
+        print_log_tail("log.simpleFoam", 120)
         raise RuntimeError("OpenFOAM run failed. Check the log files.")
 
+    print()
     print("OpenFOAM finished successfully.")
+    print(f"Case name:   {CASE_NAME}")
     print(f"Case folder: {case_dir}")
     print(f"ParaView file: {case_dir / (CASE_NAME + '.foam')}")
 
 
 def print_log_tail(log_name, n_lines=40):
     """Print the last lines of a log file."""
+
     path = case_folder() / log_name
 
     if not path.exists():
@@ -113,6 +131,5 @@ def print_log_tail(log_name, n_lines=40):
 if __name__ == "__main__":
     run_openfoam()
 
-    # Useful quick checks
     print_log_tail("log.checkMesh")
     print_log_tail("log.simpleFoam")

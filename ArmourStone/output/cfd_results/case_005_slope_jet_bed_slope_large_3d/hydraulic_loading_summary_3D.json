@@ -1,0 +1,38 @@
+{
+    "case_name": "case_005_slope_jet_bed_slope_large_3d",
+    "dimension": "3D",
+    "latest_time": "2400",
+    "number_of_flat_bed_samples": 6480,
+    "number_of_slope_samples": 11736,
+    "max_flat_bed_velocity": 1.3142373855476985,
+    "max_slope_velocity": 1.2245733779503947,
+    "governing_velocity": 1.3142373855476985,
+    "governing_region": "flat_bed",
+    "max_flat_bed_location": {
+        "x": 27.4167,
+        "y": 5.83333,
+        "z": 0.05,
+        "Ux": 1.31377,
+        "Uy": -0.0336391,
+        "Uz": -0.0098338,
+        "U_magnitude": 1.3142373855476985
+    },
+    "max_slope_location": {
+        "x": 32.1477,
+        "y": 5.83333,
+        "z": 1.32194,
+        "Ux": 1.08737,
+        "Uy": -0.0409522,
+        "Uz": 0.56172,
+        "U_magnitude": 1.2245733779503947
+    },
+    "governing_location": {
+        "x": 27.4167,
+        "y": 5.83333,
+        "z": 0.05,
+        "Ux": 1.31377,
+        "Uy": -0.0336391,
+        "Uz": -0.0098338,
+        "U_magnitude": 1.3142373855476985
+    }
+}
