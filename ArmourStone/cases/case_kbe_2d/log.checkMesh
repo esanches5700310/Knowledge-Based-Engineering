@@ -9,8 +9,8 @@ Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : checkMesh
 Date   : May 17 2026
-Time   : 12:33:52
-Host   : ef4c7d59ec17
+Time   : 15:50:06
+Host   : de9fe56049b1
 PID    : 502
 I/O    : uncollated
 Case   : /work/cases/case_kbe_2d
@@ -71,19 +71,19 @@ Checking basic cellZone addressing...
     No cellZones found.
 
 Checking geometry...
-    Overall domain bounding box (0 0 0) (42.3205 0.1 10)
+    Overall domain bounding box (0 0 0) (57.3205 0.1 10)
     Mesh has 2 geometric (non-empty/wedge) directions (1 0 1)
     Mesh has 2 solution (non-empty) directions (1 0 1)
     All edges aligned with or perpendicular to non-empty directions.
-    Boundary openness (1.16844e-19 1.12103e-13 -9.36278e-18) OK.
+    Boundary openness (8.09355e-20 3.1672e-14 -2.29259e-17) OK.
     Max cell openness = 5.1279e-15 OK.
     Max aspect ratio = 138.564 OK.
     Minimum face area = 0.00015625. Maximum face area = 0.0268941.  Face area magnitudes OK.
-    Min volume = 1.69146e-05. Max volume = 0.00268941.  Total volume = 33.6602.  Cell volumes OK.
-    Mesh non-orthogonality Max: 29.8447 average: 8.92015
+    Min volume = 1.69146e-05. Max volume = 0.00268941.  Total volume = 48.6602.  Cell volumes OK.
+    Mesh non-orthogonality Max: 29.8447 average: 8.9162
     Non-orthogonality check OK.
     Face pyramids OK.
-    Max skewness = 0.333333 OK.
+    Max skewness = 0.431851 OK.
     Coupled point location match (average 0) OK.
 
 Mesh OK.

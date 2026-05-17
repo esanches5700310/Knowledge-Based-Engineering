@@ -42,7 +42,7 @@ class Waterway(ppc.Base):
 
         :return: Angle made by the flow to the upslope direction in radians. [rad]
         """
-        return np.radians(psi_flow)
+        return np.radians(self.psi_flow)
 
     @ppc.Attribute
     def waterway_width(self):
