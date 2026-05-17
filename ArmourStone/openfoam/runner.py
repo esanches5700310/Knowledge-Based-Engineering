@@ -6,7 +6,10 @@ Runs an OpenFOAM case using Docker.
 This script can be used in two ways:
 
 1. Manually from WSL / Ubuntu:
-   python3 openfoam/runner.py
+    From Knowledge-Based-Engineering/ArmourStone:
+    python3 openfoam/case_generator.py
+    python3 openfoam/runner.py
+    python3 openfoam/postprocess.py
 
 2. From the KBE app with a custom case name:
    python3 openfoam/runner.py case_kbe_2d
