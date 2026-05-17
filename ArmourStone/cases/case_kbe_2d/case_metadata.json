@@ -15,9 +15,9 @@
     "propeller_center_x": 20.0,
     "propeller_x_min": 19.6,
     "propeller_x_max": 20.4,
-    "propeller_center_z": 5.0,
-    "propeller_z_min": 4.5,
-    "propeller_z_max": 5.5,
-    "propeller_diameter": 1.0,
+    "propeller_center_z": 6,
+    "propeller_z_min": 5.0,
+    "propeller_z_max": 7.0,
+    "propeller_diameter": 2,
     "propeller_zone_length": 0.8
 }

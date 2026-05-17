@@ -9,8 +9,8 @@ Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : topoSet
 Date   : May 17 2026
-Time   : 12:04:42
-Host   : 67d8d07ce99a
+Time   : 12:33:53
+Host   : ef4c7d59ec17
 PID    : 503
 I/O    : uncollated
 Case   : /work/cases/case_kbe_2d
@@ -30,12 +30,12 @@ Time = 0
     mesh not changed.
 Created cellSet propellerSet
     Applying source boxToCell
-    Adding cells with centre within boxes 1((19.6 0 4.5) (20.4 0.1 5.5))
-    cellSet propellerSet now size 64
+    Adding cells with centre within boxes 1((19.6 0 5) (20.4 0.1 7))
+    cellSet propellerSet now size 128
 Created cellZoneSet propellerZone
     Applying source setToCellZone
     Adding all cells from cellSet propellerSet ...
-    cellZoneSet propellerZone now size 64
+    cellZoneSet propellerZone now size 128
 
 End
 
