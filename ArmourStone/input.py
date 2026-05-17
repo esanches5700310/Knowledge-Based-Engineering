@@ -8,15 +8,15 @@ output_path = "output/report.txt"
 
 D_p = 1.0             # Diameter of the propeller. [m]
 Z_p = 5.0             # Propeller position, defined as the distance from the bed to the centre of the propeller. [m]
-draught = 7         # Distance from surface to lowest point of the hull. [m]
+draught = 7           # Distance from surface to lowest point of the hull. [m]
 
 ### Waterway variables ###
 
-depth = 10.0    # Depth of the waterway. [m]
-d_slope = 20.0  # Horizontal distance to slope from propeller. [m]
-beta = 30.0     # Side slope angle. [deg]
-phi_as = 45.0   # Angle of repose of the armourstone. [deg]
-psi_flow = 90   # Angle made by the flow to the upslope direction
+depth = 10.0                        # Depth of the waterway. [m]
+propeller_to_slope_distance = 20.0  # Horizontal distance to slope from propeller. [m]
+beta = 30.0                         # Side slope angle. [deg]
+phi_as = 45.0                       # Angle of repose of the armourstone. [deg]
+psi_flow = 90                       # Angle made by the flow to the upslope direction
 
 ### Pilarczyk parameters ###
 
@@ -34,9 +34,6 @@ run_cfd = True              # If True, the app runs OpenFOAM automatically.
 manual_velocity = 2.0       # Backup/design velocity used when run_cfd = False. [m/s]
 
 jet_velocity = 3.0          # Target propeller jet velocity used in OpenFOAM. [m/s]
-
-# Main physical CFD distance
-propeller_to_slope_distance = 5.0 # Distance from propeller centre to slope toe. [m]
 
 ### CFD simulation selection ###
 

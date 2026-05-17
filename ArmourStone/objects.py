@@ -12,7 +12,7 @@ class Ship(ppc.Base):
 
 class Waterway(ppc.Base):
     h = ppc.Input(depth, doc="Water depth. [m]")
-    d_slope = ppc.Input(d_slope, doc="Distance to slope. [m]")
+    d_slope = ppc.Input(propeller_to_slope_distance, doc="Distance to slope. [m]")
     beta = ppc.Input(beta, doc="Side slope angle. [deg]")
     phi_as = ppc.Input(phi_as, doc="Angle of repose of the armourstone. [deg]")
     psi_flow = ppc.Input(psi_flow, doc="Angle made by the flow to the upslope direction. [deg]")

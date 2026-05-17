@@ -13,8 +13,8 @@ actions
         type    cellSet;
         action  new;
         source  boxToCell;
-        box     (19.6 0 4.5)
-                (20.4 0.1 5.5);
+        box     (19.6 0 5)
+                (20.4 0.1 7);
     }
 
     {

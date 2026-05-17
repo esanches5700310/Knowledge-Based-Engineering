@@ -11,11 +11,12 @@ FoamFile
     format      ascii;
     arch        "LSB;label=32;scalar=64";
     class       dictionary;
-    location    "3470/uniform/functionObjects";
-    object      functionObjectProperties;
+    location    "3500/uniform";
+    object      propellerJetProperties;
 }
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
+gradient        37.3834;
 
 
 // ************************************************************************* //
