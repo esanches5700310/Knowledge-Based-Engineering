@@ -10,8 +10,8 @@ class Geometry(ppc.Base):
     def waterway_shape(self):
         return Polygon([
             (0, 0, -self.waterway.h),                                         # Leftmost point on bed
-            (self.waterway.d_slope, 0, -self.waterway.h),                 # Begin of the slope
-            (self.waterway.d_slope + self.waterway.waterway_width, 0, 0), # End of the slope
+            (self.waterway.d_slope, 0, -self.waterway.h),                     # Begin of the slope
+            (self.waterway.d_slope + self.waterway.waterway_width, 0, 0),     # End of the slope
             (0, 0, 0)                                                         # water surface left
         ], color="blue")
 
