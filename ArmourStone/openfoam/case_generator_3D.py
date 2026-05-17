@@ -19,7 +19,10 @@ from pathlib import Path
 
 
 # ----------------------------------------------------------------------
-# Case settings
+# Case Settings
+
+# Default values used only when this file is run directly.
+# When the KBE app is used, these values are overwritten by cfd_interface.py.
 # ----------------------------------------------------------------------
 
 CASE_NAME = "case_005_slope_jet_bed_slope_large_3d"
@@ -73,7 +76,7 @@ def case_folder():
 
 
 # ----------------------------------------------------------------------
-# Geometry helper functions
+# Geometry calculations
 # ----------------------------------------------------------------------
 
 def slope_top_z():
@@ -161,7 +164,7 @@ def check_inputs():
 
 
 # ----------------------------------------------------------------------
-# Main generation
+# Main case generation function
 # ----------------------------------------------------------------------
 
 def create_case():
@@ -214,7 +217,7 @@ def create_case():
 
 
 # ----------------------------------------------------------------------
-# OpenFOAM writers
+# OpenFOAM file writers
 # ----------------------------------------------------------------------
 
 def write_block_mesh_dict(case_dir):

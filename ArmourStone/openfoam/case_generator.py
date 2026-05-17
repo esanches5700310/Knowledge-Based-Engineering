@@ -17,7 +17,10 @@ from pathlib import Path
 
 
 # ----------------------------------------------------------------------
-# Basic scenario inputs
+# Case Settings
+
+# Default values used only when this file is run directly.
+# When the KBE app is used, these values are overwritten by cfd_interface.py.
 # ----------------------------------------------------------------------
 
 CASE_NAME = "case_004_slope_jet_bed_slope_large_2d"
@@ -49,7 +52,7 @@ CELLS_Z = 80
 NEAR_WALL_HEIGHT = 0.10
 
 # ----------------------------------------------------------------------
-# Useful paths
+# Paths
 # ----------------------------------------------------------------------
 
 def armourstone_folder():
