@@ -1,7 +1,6 @@
 import numpy as np
 from parapy import core as ppc
 from input import *
-from parapy.geom import Polygon
 
 class Ship(ppc.Base):
     D_p = ppc.Input(D_p, doc="Diameter of the propeller. [m]")

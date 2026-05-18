@@ -1,11 +1,8 @@
 import datetime
 import os
 import threading
-import os
-import warnings
 import numpy as np
 from parapy import core as ppc
-from parapy.core.exceptions import ParaPyDeprecationWarning
 from parapy.gui import display
 from parapy.gui.widgets import wx
 from objects import Ship, Waterway, ArmourStone
