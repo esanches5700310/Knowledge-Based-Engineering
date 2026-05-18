@@ -9,8 +9,8 @@ Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : blockMesh
 Date   : May 18 2026
-Time   : 15:48:19
-Host   : 239af7344e43
+Time   : 15:51:34
+Host   : b59ef551e902
 PID    : 501
 I/O    : uncollated
 Case   : /work/cases/case_kbe_2d
@@ -62,12 +62,12 @@ Creating points with scale (1 1 1)
     Block 0 cell size :
         i : 0.104167 .. 0.104167
         j : 0.1 .. 0.1
-        k : 0.125 .. 0.125
+        k : 0.25 .. 0.25
 
     Block 1 cell size :
-        i : 0.25 .. 0.25
+        i : 0.5 .. 0.5
         j : 0.1 .. 0.1
-        k : 0.125 .. 0.125
+        k : 0.25 .. 0.25
 
 
 There are no merge patch pairs
@@ -76,7 +76,7 @@ Writing polyMesh with 0 cellZones
 ----------------
 Mesh Information
 ----------------
-  boundingBox: (0 0 0) (42.3205 0.1 10)
+  boundingBox: (0 0 0) (59.641 0.1 20)
   nPoints: 51842
   nCells: 25600
   nFaces: 102720

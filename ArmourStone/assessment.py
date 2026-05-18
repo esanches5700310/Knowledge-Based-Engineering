@@ -218,7 +218,7 @@ class ArmourStoneAssessment(ppc.Base):
 
     @ppc.Attribute
     def cfd_status_message(self):
-        """Human-readable CFD status for the GUI."""
+        """Readable CFD status for the GUI."""
         if not self.cfd.run_cfd:
             return "CFD disabled"
         if self.cfd_running:

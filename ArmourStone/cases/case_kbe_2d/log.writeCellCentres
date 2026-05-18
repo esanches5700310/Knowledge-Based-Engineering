@@ -9,8 +9,8 @@ Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : postProcess -func writeCellCentres -latestTime
 Date   : May 18 2026
-Time   : 15:50:29
-Host   : 239af7344e43
+Time   : 15:57:23
+Host   : b59ef551e902
 PID    : 505
 I/O    : uncollated
 Case   : /work/cases/case_kbe_2d
@@ -22,18 +22,18 @@ allowSystemOperations : Allowing user-supplied system call operations
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 Create time
 
-Create mesh for time = 3470
+Create mesh for time = 8688
 
-Time = 3470
+Time = 8688
 
 Reading fields:
 
 Executing functionObjects
 writeCellCentres writeCellCentres write:
-    writing cell-volumes field C to 3470
-    Writing the x component field of the cell-centres Cx to 3470
-    Writing the y component field of the cell-centres Cy to 3470
-    Writing the z component field of the cell-centres Cz to 3470
+    writing cell-volumes field C to 8688
+    Writing the x component field of the cell-centres Cx to 8688
+    Writing the y component field of the cell-centres Cy to 8688
+    Writing the z component field of the cell-centres Cz to 8688
 
 End
 
