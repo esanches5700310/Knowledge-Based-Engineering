@@ -1,7 +1,7 @@
 {
     "simulation_type": "2D",
     "case_name": "case_kbe_2d",
-    "water_depth": 20,
+    "water_depth": 10.0,
     "flat_bed_length": 25.0,
     "slope_angle_deg": 30.0,
     "slope_top_fraction": 1.0,
@@ -10,7 +10,7 @@
     "propeller_center_z": 5.0,
     "propeller_diameter": 1.0,
     "propeller_zone_length": 0.8,
-    "jet_velocity": 3.0,
+    "jet_velocity": 5.0,
     "kinematic_viscosity": 1e-06,
     "cells_flat_x": 240,
     "cells_slope_x": 80,

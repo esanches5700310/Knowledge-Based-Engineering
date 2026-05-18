@@ -3,9 +3,201 @@ import pandas as pd
 
 from parapy import core as ppc
 from parapy.core import child
-from parapy.geom import Polygon, Sphere, Point, TextLabel, Box, translate, XOY
+from parapy.geom import Polygon, Sphere, Box, translate, XOY
+
+
+class VelocityFieldVisualization(ppc.Base):
+    """Visualize post-processed CFD velocity samples in the ParaPy GUI.
+
+    The class reads one or more CSV files containing CFD sample points and
+    displays them as a coloured point cloud. The intention is to provide a
+    ParaView-like engineering overview inside ParaPy, without embedding
+    ParaView itself.
+
+    Expected CSV columns:
+        x, y, z, U_magnitude
+    """
+
+    csv_files = ppc.Input(
+        [],
+        doc="List of CFD CSV files containing x, y, z, U_magnitude columns."
+    )
+
+    waterway = ppc.Input(
+        doc="Waterway object, used to map CFD coordinates to GUI coordinates."
+    )
+
+    cfd_x_offset = ppc.Input(
+        0.0,
+        doc="Offset between CFD x-coordinates and ParaPy GUI x-coordinates."
+    )
+
+    max_points = ppc.Input(
+        300,
+        doc="Maximum number of CFD points displayed in the GUI."
+    )
+
+    point_radius = ppc.Input(
+        0.05,
+        doc="Radius of each velocity point in the GUI."
+    )
+
+    show = ppc.Input(
+        True,
+        doc="Show or hide the CFD velocity field visualization."
+    )
+
+    red_ratio = ppc.Input(
+        0.90,
+        doc="Velocity/max_velocity ratio from which points are coloured red."
+    )
+
+    orange_ratio = ppc.Input(
+        0.65,
+        doc="Velocity/max_velocity ratio from which points are coloured orange."
+    )
+
+    yellow_ratio = ppc.Input(
+        0.30,
+        doc="Velocity/max_velocity ratio from which points are coloured yellow."
+    )
+
+    @ppc.Attribute
+    def raw_velocity_dataframe(self):
+        """Read and combine all available CFD velocity CSV files."""
+        dataframes = []
+        required_columns = {"x", "y", "z", "U_magnitude"}
+
+        for filename in self.csv_files:
+            if filename is None:
+                continue
+
+            if not os.path.exists(filename):
+                print(f"CSV file not found: {filename}")
+                continue
+
+            df = pd.read_csv(filename)
+            missing = required_columns - set(df.columns)
+
+            if missing:
+                raise ValueError(
+                    f"Velocity CSV {filename} misses columns: {missing}"
+                )
+
+            dataframes.append(df)
+
+        if not dataframes:
+            return pd.DataFrame(columns=list(required_columns))
+
+        return pd.concat(dataframes, ignore_index=True)
+
+    @ppc.Attribute
+    def sampled_velocity_dataframe(self):
+        """Reduce the number of displayed points while keeping the maximum."""
+        df = self.raw_velocity_dataframe
+
+        if df.empty:
+            return df
+
+        df = df.sort_values(["x", "z", "y"]).reset_index(drop=True)
+
+        if len(df) <= self.max_points:
+            sampled = df.copy()
+        else:
+            indices = [
+                round(i * (len(df) - 1) / (self.max_points - 1))
+                for i in range(self.max_points)
+            ]
+            sampled = df.iloc[indices].copy()
+
+        max_index = df["U_magnitude"].idxmax()
+        max_row = df.loc[max_index]
+
+        already_included = (
+            (sampled["x"] == max_row["x"])
+            & (sampled["y"] == max_row["y"])
+            & (sampled["z"] == max_row["z"])
+        ).any()
+
+        if not already_included:
+            sampled = pd.concat([sampled, max_row.to_frame().T])
+
+        return sampled.reset_index(drop=True)
+
+    @ppc.Attribute
+    def velocity_data(self):
+        """CFD velocity samples converted to dictionaries for ParaPy Parts."""
+        return self.sampled_velocity_dataframe.to_dict("records")
+
+    @ppc.Attribute
+    def max_velocity(self):
+        """Maximum velocity magnitude in the imported CFD field."""
+        if not self.velocity_data:
+            return 0.0
+
+        return max(float(row["U_magnitude"]) for row in self.velocity_data)
+
+    def _velocity_ratio(self, velocity):
+        """Return velocity normalized with the maximum imported velocity."""
+        if self.max_velocity == 0:
+            return 0.0
+
+        return float(velocity) / self.max_velocity
+
+    def _velocity_color(self, velocity):
+        """Map velocity magnitude to a simple green-yellow-orange-red scale."""
+        ratio = self._velocity_ratio(velocity)
+
+        if ratio >= self.red_ratio:
+            return "red"
+        if ratio >= self.orange_ratio:
+            return "orange"
+        if ratio >= self.yellow_ratio:
+            return "yellow"
+        return "green"
+
+    def _point_position(self, row):
+        """Map CFD coordinates to the current ParaPy geometry coordinates."""
+        return translate(
+            XOY,
+            "x", float(row["x"]) - self.cfd_x_offset,
+            "y", float(row["y"]),
+            "z", float(row["z"]) - self.waterway.h
+        )
+
+    @ppc.Part
+    def velocity_points(self):
+        """Coloured CFD velocity point cloud shown in the ParaPy GUI."""
+        return Sphere(
+            quantify=len(self.velocity_data),
+            radius=self.point_radius,
+            position=self._point_position(self.velocity_data[child.index]),
+            color=self._velocity_color(
+                self.velocity_data[child.index]["U_magnitude"]
+            ),
+            suppress=not self.show or len(self.velocity_data) == 0
+        )
+
+    @ppc.Attribute
+    def velocity_table(self):
+        """Readable CFD velocity values for the ParaPy property grid."""
+        return [
+            {
+                "x_gui": round(float(row["x"]) - self.cfd_x_offset, 3),
+                "y_gui": round(float(row["y"]), 3),
+                "z_gui": round(float(row["z"]) - self.waterway.h, 3),
+                "U_magnitude": round(float(row["U_magnitude"]), 4),
+                "velocity_ratio": round(
+                    self._velocity_ratio(row["U_magnitude"]),
+                    3
+                )
+            }
+            for row in self.velocity_data
+        ]
+
 
 class Geometry(ppc.Base):
+    """ParaPy geometry for the waterway, ship, propeller and CFD velocity field."""
 
     waterway = ppc.Input()
     ship = ppc.Input()
@@ -20,8 +212,24 @@ class Geometry(ppc.Base):
         doc="Folder containing the CFD CSV result files."
     )
 
+    show_velocity_field = ppc.Input(
+        True,
+        doc="Show the imported CFD velocity field as a coloured point cloud."
+    )
+
+    velocity_field_max_points = ppc.Input(
+        300,
+        doc="Maximum number of CFD velocity points shown in the GUI."
+    )
+
+    velocity_field_point_radius = ppc.Input(
+        0.05,
+        doc="Radius of the CFD velocity point-cloud markers."
+    )
+
     @ppc.Attribute
     def flat_bed_velocity_csv(self):
+        """Default OpenFOAM post-processing CSV for the flat bed."""
         if self.cfd_results_dir is None:
             return None
 
@@ -32,6 +240,7 @@ class Geometry(ppc.Base):
 
     @ppc.Attribute
     def slope_velocity_csv(self):
+        """Default OpenFOAM post-processing CSV for the slope."""
         if self.cfd_results_dir is None:
             return None
 
@@ -40,113 +249,40 @@ class Geometry(ppc.Base):
             "slope_velocity_samples.csv"
         )
 
-    n_velocity_markers = ppc.Input(
-        10,
-        doc="Number of velocity markers to show on flat bed and slope."
-    )
+    @ppc.Attribute
+    def velocity_csv_files(self):
+        """CSV files used for the ParaView-like velocity-field visualization."""
+        return [
+            filename
+            for filename in [
+                self.flat_bed_velocity_csv,
+                self.slope_velocity_csv
+            ]
+            if filename is not None
+        ]
 
-    show_velocity_markers = ppc.Input(
-        True,
-        doc="Show CFD velocity sample markers in the geometry view."
-    )
+    def _read_velocity_csv(self, filename):
+        """Read a velocity CSV file when it exists."""
+        if filename is None or not os.path.exists(filename):
+            return None
 
-    show_velocity_labels = ppc.Input(
-        True,
-        doc="Show velocity value labels next to the markers."
-    )
+        return pd.read_csv(filename)
 
-    velocity_label_size = ppc.Input(
-        0.2,
-        doc="Size of the velocity text labels."
-    )
+    @ppc.Attribute
+    def cfd_x_offset(self):
+        """
+        Offset between CFD x-coordinate and GUI x-coordinate.
 
-    slope_label_y_offset = ppc.Input(
-        -0.6,
-        doc="Y-offset used to move slope labels away from slope velocity markers."
-    )
+        If the slope CSV is available, the first slope x-coordinate is mapped
+        to the start of the ParaPy slope at x = waterway.d_slope. This keeps
+        the imported CFD points aligned with the waterway geometry.
+        """
+        df_slope = self._read_velocity_csv(self.slope_velocity_csv)
 
-    flat_bed_label_y_offset = ppc.Input(
-        -0.6,
-        doc="Y-offset used to move flat bed labels away from flat bed velocity markers."
-    )
+        if df_slope is None or df_slope.empty or "x" not in df_slope.columns:
+            return 0.0
 
-    def _child_index(self, index):
-        """Return a normal integer index from ParaPy child.index."""
-        if isinstance(index, list):
-            return index[-1]
-
-        if isinstance(index, tuple):
-            return index[-1]
-
-        return index
-
-    def _marker_radius(self, data, max_velocity, index):
-        """Return marker radius for one marker."""
-        i = self._child_index(index)
-        row = data[i]
-
-        return 0.15 if row["U_magnitude"] == max_velocity else 0.10
-
-    def _marker_color(self, data, max_velocity, index, normal_color=None):
-        """Return marker color based on relative velocity magnitude."""
-        if not data or max_velocity in [None, 0]:
-            return "green"
-
-        i = self._child_index(index)
-        row = data[i]
-
-        velocity = float(row["U_magnitude"])
-        velocity_ratio = velocity / max_velocity
-
-        if velocity_ratio >= 0.95:
-            return "red"  # highest / near-highest
-        elif velocity_ratio >= 0.65:
-            return "orange"  # high
-        elif velocity_ratio >= 0.30:
-            return "yellow"  # intermediate
-        else:
-            return "green"  # low
-
-    def _marker_position(self, data, index, y_offset):
-        """Return marker position for one marker."""
-        i = self._child_index(index)
-        row = data[i]
-
-        return self._to_gui_point(row, y_offset=y_offset)
-
-    @ppc.Part
-    def flat_bed_velocity_labels(self):
-        return TextLabel(
-            quantify=len(self.flat_bed_velocity_data),
-            text="{:.2f} m/s".format(
-                self.flat_bed_velocity_data[child.index]["U_magnitude"]
-            ),
-            position=self._marker_position(
-                self.flat_bed_velocity_data,
-                child.index,
-                y_offset=self.flat_bed_label_y_offset
-            ),
-            size=self.velocity_label_size,
-            color="black",
-            suppress=not self.show_velocity_labels
-        )
-
-    @ppc.Part
-    def slope_velocity_labels(self):
-        return TextLabel(
-            quantify=len(self.slope_velocity_data),
-            text="{:.2f} m/s".format(
-                self.slope_velocity_data[child.index]["U_magnitude"]
-            ),
-            position=self._marker_position(
-                self.slope_velocity_data,
-                child.index,
-                y_offset=self.slope_label_y_offset
-            ),
-            size=self.velocity_label_size,
-            color="black",
-            suppress=not self.show_velocity_labels
-        )
+        return float(df_slope["x"].min() - self.waterway.d_slope)
 
     @ppc.Part
     def waterway_shape(self):
@@ -187,230 +323,13 @@ class Geometry(ppc.Base):
             color="black"
         )
 
-    def _read_velocity_csv(self, filename):
-        """Read a CFD velocity CSV file."""
-        if filename is None:
-            return None
-
-        if not os.path.exists(filename):
-            print(f"CSV file not found: {filename}")
-            return None
-
-        df = pd.read_csv(filename)
-
-        required_columns = {"x", "y", "z", "U_magnitude"}
-        missing = required_columns - set(df.columns)
-
-        if missing:
-            raise ValueError(
-                f"Velocity CSV {filename} misses columns: {missing}"
-            )
-
-        return df
-
-    def _sample_velocity_points(self, df):
-        """Return approximately n equally spaced samples plus the max point."""
-        if df is None or df.empty:
-            return []
-
-        df = df.sort_values("x").reset_index(drop=True)
-
-        if len(df) <= self.n_velocity_markers:
-            sampled = df.copy()
-        else:
-            indices = [
-                round(i * (len(df) - 1) / (self.n_velocity_markers - 1))
-                for i in range(self.n_velocity_markers)
-            ]
-            sampled = df.iloc[indices].copy()
-
-        max_index = df["U_magnitude"].idxmax()
-        max_row = df.loc[max_index]
-
-        # Make sure the max point is included, even if it was not selected
-        # by the equally spaced sampling.
-        if not ((sampled["x"] == max_row["x"]) &
-                (sampled["z"] == max_row["z"])).any():
-            sampled = pd.concat([sampled, max_row.to_frame().T])
-
-        sampled = sampled.reset_index(drop=True)
-        return sampled.to_dict("records")
-
-    @ppc.Attribute
-    def flat_bed_velocity_data(self):
-        """Sampled flat bed velocity points."""
-        df = self._read_velocity_csv(self.flat_bed_velocity_csv)
-        return self._sample_velocity_points(df)
-
-    @ppc.Attribute
-    def slope_velocity_data(self):
-        """Sample slope velocity points uniformly along the physical slope."""
-        df = self._read_velocity_csv(self.slope_velocity_csv)
-
-        if df is None or df.empty:
-            return []
-
-        df = df.copy()
-
-        # Convert CFD coordinates to GUI coordinates
-        df["x_gui"] = df["x"] - self.cfd_x_offset
-        df["z_gui"] = df["z"] - self.waterway.h
-
-        # Slope line in GUI coordinates:
-        # start: bottom of slope
-        # end: top of slope / water surface
-        x0 = self.waterway.d_slope
-        z0 = -self.waterway.h
-
-        x1 = self.waterway.d_slope + self.waterway.waterway_width
-        z1 = 0.0
-
-        dx = x1 - x0
-        dz = z1 - z0
-        slope_length_squared = dx ** 2 + dz ** 2
-
-        # Project every CFD point onto the slope direction.
-        # This gives a coordinate from 0 to 1 along the slope.
-        df["s_slope"] = (
-                ((df["x_gui"] - x0) * dx + (df["z_gui"] - z0) * dz)
-                / slope_length_squared
-        )
-
-        # Keep only points that are roughly on the actual slope range
-        df = df[(df["s_slope"] >= 0.0) & (df["s_slope"] <= 1.0)]
-
-        if df.empty:
-            return []
-
-        # Choose target locations uniformly along the slope
-        targets = [
-            i / (self.n_velocity_markers - 1)
-            for i in range(self.n_velocity_markers)
-        ]
-
-        sampled_rows = []
-
-        for target in targets:
-            closest_index = (df["s_slope"] - target).abs().idxmin()
-            sampled_rows.append(df.loc[closest_index])
-
-        sampled = pd.DataFrame(sampled_rows).drop_duplicates(
-            subset=["x", "z"]
-        )
-
-        # Always include the maximum velocity point as well
-        max_index = df["U_magnitude"].idxmax()
-        max_row = df.loc[max_index]
-
-        if not ((sampled["x"] == max_row["x"]) &
-                (sampled["z"] == max_row["z"])).any():
-            sampled = pd.concat([sampled, max_row.to_frame().T])
-
-        sampled = sampled.sort_values("s_slope").reset_index(drop=True)
-
-        return sampled.to_dict("records")
-
-    @ppc.Attribute
-    def cfd_x_offset(self):
-        """
-        Offset between CFD x-coordinate and GUI x-coordinate.
-
-        The first slope CSV point is mapped to the beginning of the
-        ParaPy slope at x = waterway.d_slope.
-        """
-        df_slope = self._read_velocity_csv(self.slope_velocity_csv)
-
-        if df_slope is None or df_slope.empty:
-            return 0.0
-
-        return float(df_slope["x"].min() - self.waterway.d_slope)
-
-    def _to_gui_point(self, row, y_offset=0.0):
-        """Convert a CFD CSV row to a ParaPy GUI point."""
-        x_gui = float(row["x"]) - self.cfd_x_offset
-        y_gui = y_offset
-        z_gui = float(row["z"]) - self.waterway.h
-
-        return Point(x_gui, y_gui, z_gui)
-
-    @ppc.Attribute
-    def max_flat_bed_velocity(self):
-        if not self.flat_bed_velocity_data:
-            return None
-        return max(row["U_magnitude"] for row in self.flat_bed_velocity_data)
-
-    @ppc.Attribute
-    def max_slope_velocity(self):
-        if not self.slope_velocity_data:
-            return None
-        return max(row["U_magnitude"] for row in self.slope_velocity_data)
-
     @ppc.Part
-    def flat_bed_velocity_markers(self):
-        return Sphere(
-            quantify=len(self.flat_bed_velocity_data),
-            radius=self._marker_radius(
-                self.flat_bed_velocity_data,
-                self.max_flat_bed_velocity,
-                child.index
-            ),
-            position=self._marker_position(
-                self.flat_bed_velocity_data,
-                child.index,
-                y_offset=0
-            ),
-            color=self._marker_color(
-                self.flat_bed_velocity_data,
-                self.max_flat_bed_velocity,
-                child.index
-            ),
-            suppress=not self.show_velocity_markers
+    def velocity_field(self):
+        return VelocityFieldVisualization(
+            csv_files=self.velocity_csv_files,
+            waterway=self.waterway,
+            cfd_x_offset=self.cfd_x_offset,
+            max_points=self.velocity_field_max_points,
+            point_radius=self.velocity_field_point_radius,
+            show=self.show_velocity_field
         )
-
-    @ppc.Part
-    def slope_velocity_markers(self):
-        return Sphere(
-            quantify=len(self.slope_velocity_data),
-            radius=self._marker_radius(
-                self.slope_velocity_data,
-                self.max_slope_velocity,
-                child.index
-            ),
-            position=self._marker_position(
-                self.slope_velocity_data,
-                child.index,
-                y_offset=0
-            ),
-            color=self._marker_color(
-                self.slope_velocity_data,
-                self.max_slope_velocity,
-                child.index
-            ),
-            suppress=not self.show_velocity_markers
-        )
-
-    @ppc.Attribute
-    def flat_bed_velocity_table(self):
-        """Readable velocity values for the ParaPy property grid."""
-        return [
-            {
-                "x_gui": round(float(row["x"]) - self.cfd_x_offset, 3),
-                "z_gui": round(float(row["z"]) - self.waterway.h, 3),
-                "U_magnitude": round(float(row["U_magnitude"]), 4),
-                "is_max": float(row["U_magnitude"]) == self.max_flat_bed_velocity
-            }
-            for row in self.flat_bed_velocity_data
-        ]
-
-    @ppc.Attribute
-    def slope_velocity_table(self):
-        """Readable velocity values for the ParaPy property grid."""
-        return [
-            {
-                "x_gui": round(float(row["x"]) - self.cfd_x_offset, 3),
-                "z_gui": round(float(row["z"]) - self.waterway.h, 3),
-                "U_magnitude": round(float(row["U_magnitude"]), 4),
-                "is_max": float(row["U_magnitude"]) == self.max_slope_velocity
-            }
-            for row in self.slope_velocity_data
-        ]
