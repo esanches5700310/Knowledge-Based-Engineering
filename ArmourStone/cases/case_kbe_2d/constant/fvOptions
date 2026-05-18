@@ -15,6 +15,6 @@ propellerJet
     cellZone        propellerZone;
 
     fields          (U);
-    Ubar            (5 0 0);
+    Ubar            (3 0 0);
     relaxation      0.2;
 }

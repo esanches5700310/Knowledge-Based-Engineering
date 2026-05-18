@@ -8,7 +8,7 @@
     "slope_run": 17.320508075688775,
     "total_length": 42.32050807568878,
     "domain_width": 0.1,
-    "jet_velocity": 5.0,
+    "jet_velocity": 3.0,
     "kinematic_viscosity": 1e-06,
     "near_wall_height": 0.1,
     "propeller_distance_to_slope_toe": 5.0,

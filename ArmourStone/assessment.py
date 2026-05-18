@@ -76,10 +76,16 @@ class AssessmentResults(ppc.Base):
     def cfd_error(self):
         return self.assessment.cfd_error
 
+    @ppc.Attribute
+    def cfd_status_message(self):
+        """Expose the CFD status message from the main assessment for the GUI results panel."""
+        return self.assessment.cfd_status_message
+
 
 class ArmourStoneAssessment(ppc.Base):
     _cfd_result = None
     _cfd_thread = None
+    cfd_running_flag = ppc.Input(False, doc="Internal CFD running indicator.")
 
     @ppc.Attribute(settable=True)
     def cfd_result(self):
@@ -131,6 +137,23 @@ class ArmourStoneAssessment(ppc.Base):
                 "error": str(exc),
             }
         finally:
+            # Mark CFD as finished and refresh dependants.
+            self.cfd_running_flag = False
+            try:
+                if hasattr(self, "results") and self.results is not None:
+                    wx.CallAfter(self.results.invalidate_dependants, "cfd_status_message")
+            except Exception:
+                pass
+            try:
+                wx.CallAfter(self.invalidate_dependants, "cfd_running")
+                wx.CallAfter(self.invalidate_dependants, "cfd_status_message")
+            except Exception:
+                try:
+                    self.invalidate_dependants("cfd_running")
+                    self.invalidate_dependants("cfd_status_message")
+                except Exception:
+                    pass
+            # Also refresh standard dependants
             self._invalidate_dependants()
 
     def _invalidate_dependants(self):
@@ -168,8 +191,43 @@ class ArmourStoneAssessment(ppc.Base):
 
     def _start_cfd_thread(self):
         if self._cfd_thread is None or not self._cfd_thread.is_alive():
+            # Set running flag immediately so the GUI can update instantly.
+            self.cfd_running_flag = True
+            try:
+                if hasattr(self, "results") and self.results is not None:
+                    wx.CallAfter(self.results.invalidate_dependants, "cfd_status_message")
+            except Exception:
+                pass
+            try:
+                wx.CallAfter(self.invalidate_dependants, "cfd_running")
+                wx.CallAfter(self.invalidate_dependants, "cfd_status_message")
+            except Exception:
+                try:
+                    self.invalidate_dependants("cfd_running")
+                    self.invalidate_dependants("cfd_status_message")
+                except Exception:
+                    pass
+
             self._cfd_thread = threading.Thread(target=self._run_cfd_workflow, daemon=True)
             self._cfd_thread.start()
+
+    @ppc.Attribute
+    def cfd_running(self):
+        """Boolean indicating whether the CFD thread is currently running."""
+        return bool(self.cfd_running_flag or (self._cfd_thread is not None and self._cfd_thread.is_alive()))
+
+    @ppc.Attribute
+    def cfd_status_message(self):
+        """Human-readable CFD status for the GUI."""
+        if not self.cfd.run_cfd:
+            return "CFD disabled"
+        if self.cfd_running:
+            return "Running"
+        if self.cfd_result is None:
+            return "Pending"
+        if self.cfd_result and self.cfd_result.get("error"):
+            return f"Error: {self.cfd_result.get('error')}"
+        return "Completed"
 
     @ppc.Attribute
     def delta(self):

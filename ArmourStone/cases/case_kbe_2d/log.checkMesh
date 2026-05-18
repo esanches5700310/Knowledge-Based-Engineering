@@ -9,13 +9,8 @@ Build  : _8993af73-20221106 OPENFOAM=2206 patch=221104 version=2206
 Arch   : "LSB;label=32;scalar=64"
 Exec   : checkMesh
 Date   : May 18 2026
-<<<<<<< HEAD
-Time   : 13:10:06
-Host   : f009652cff91
-=======
-Time   : 11:07:26
-Host   : 6986a46eb33a
->>>>>>> 6ddce51d33be891ccaa2a689a380cc15be8334fa
+Time   : 15:48:20
+Host   : 239af7344e43
 PID    : 502
 I/O    : uncollated
 Case   : /work/cases/case_kbe_2d
