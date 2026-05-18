@@ -1,9 +1,0 @@
-{
-    "case_name": "case_002_slope_bed_2d",
-    "latest_time": "184",
-    "number_of_flat_bed_samples": 100,
-    "number_of_slope_samples": 542,
-    "max_flat_bed_velocity": 2.0015187439924116,
-    "max_slope_velocity": 1.9502743655570618,
-    "governing_velocity": 2.0015187439924116
-}
