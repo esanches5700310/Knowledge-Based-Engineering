@@ -1,3 +1,5 @@
+import datetime
+import os
 import threading
 import warnings
 import numpy as np
@@ -76,36 +78,8 @@ class AssessmentResults(ppc.Base):
     def cfd_error(self):
         return self.assessment.cfd_error
 
-    @ppc.Attribute
-    def required_D_n50_note(self):
-        return self.assessment.required_D_n50_note
-
-    @ppc.Attribute
-    def cfd_feedback(self):
-        if self.cfd_error:
-            return f"CFD error: {self.cfd_error}"
-
-        status = self.assessment.cfd_status
-        if status == "idle":
-            return "CFD has not been started. Press the Run CFD button."
-        if status == "disabled":
-            return "CFD is disabled. Enable CFD before pressing Run CFD."
-        if status == "queued":
-            return "CFD is queued and will begin shortly."
-        if status == "creating case":
-            return "Creating the CFD case files."
-        if status == "running OpenFOAM":
-            return "OpenFOAM is running. This can take several minutes."
-        if status == "postprocessing":
-            return "Postprocessing CFD results."
-        if status == "done":
-            return "CFD is complete. Results are ready."
-        return f"CFD status: {status}"
-
 
 class ArmourStoneAssessment(ppc.Base):
-    _cfd_status = "idle"
-    _cfd_progress = 0
     _cfd_result = None
     _cfd_thread = None
 
@@ -137,47 +111,19 @@ class ArmourStoneAssessment(ppc.Base):
     def run_cfd_simulation(self):
         """Start the CFD workflow when the button is pressed."""
         if not self.cfd.run_cfd:
-            self._set_cfd_status("disabled", 0)
+            self._invalidate_dependants()
             return
 
         self.cfd_result = None
-        self._set_cfd_status("queued", 1)
         self.evaluate_all(max_depth=1)
         self._start_cfd_thread()
-
-    def _set_cfd_status(self, status, progress=0):
-        self.cfd_status = status
-        self.cfd_progress = progress
-        for attr in ["cfd_status", "cfd_progress"]:
-            try:
-                self.invalidate_dependants(attr)
-            except Exception:
-                pass
-            try:
-                wx.CallAfter(self.invalidate_dependants, attr)
-            except Exception:
-                pass
-
-        if hasattr(self, "results") and self.results is not None:
-            for attr in ["cfd_feedback"]:
-                try:
-                    self.results.invalidate_dependants(attr)
-                except Exception:
-                    pass
-                try:
-                    wx.CallAfter(self.results.invalidate_dependants, attr)
-                except Exception:
-                    pass
+        self._invalidate_dependants()
 
     def _run_cfd_workflow(self):
         try:
-            self._set_cfd_status("creating case", 20)
             settings = self.cfd_settings
-            self._set_cfd_status("running OpenFOAM", 50)
             summary = run_openfoam_workflow(settings)
-            self._set_cfd_status("postprocessing", 80)
             self.cfd_result = summary
-            self._set_cfd_status("done", 100)
         except Exception as exc:
             self.cfd_result = {
                 "latest_time": None,
@@ -186,14 +132,11 @@ class ArmourStoneAssessment(ppc.Base):
                 "governing_velocity": self.cfd.manual_velocity,
                 "error": str(exc),
             }
-            self._set_cfd_status(f"error: {exc}", 100)
         finally:
             self._invalidate_dependants()
 
     def _invalidate_dependants(self):
         for attr in [
-            "cfd_status",
-            "cfd_progress",
             "cfd_error",
             "cfd_summary",
             "hydraulic_velocity",
@@ -215,7 +158,6 @@ class ArmourStoneAssessment(ppc.Base):
                 "required_D_n50_cm",
                 "governing_velocity",
                 "cfd_error",
-                "cfd_feedback",
             ]:
                 try:
                     self.results.invalidate_dependants(attr)
@@ -230,14 +172,6 @@ class ArmourStoneAssessment(ppc.Base):
         if self._cfd_thread is None or not self._cfd_thread.is_alive():
             self._cfd_thread = threading.Thread(target=self._run_cfd_workflow, daemon=True)
             self._cfd_thread.start()
-
-    @ppc.Attribute(settable=True)
-    def cfd_status(self):
-        return self._cfd_status
-
-    @ppc.Attribute(settable=True)
-    def cfd_progress(self):
-        return self._cfd_progress
 
     @ppc.Attribute
     def delta(self):
@@ -293,39 +227,217 @@ class ArmourStoneAssessment(ppc.Base):
     def geom(self): 
         return Geometry(waterway=self.waterway, ship=self.ship)
     
-    def report(self):
+    def report(self, filename=None, format="pdf"):
         """
         Generate and save the report.
+
+        Parameters
+        ----------
+        filename : str | None
+            Output file path. If None, a default report file will be created.
+        format : str
+            Output format, currently only 'pdf' is supported.
         """
-        pass
-
-    def run(self):
-        """Run the assessment and print the main results."""
-
-        print("Running armour stone assessment")
-        print("-------------------------------")
-        print(f"Run CFD: {self.cfd.run_cfd}")
-        print(f"OpenFOAM simulation type: {self.cfd.openfoam_simulation_type}")
-        print(f"Hydraulic velocity used: {self.hydraulic_velocity:.4f} m/s")
-        print(f"Required D_n50: {self.required_D_n50:.4f} m")
+        if filename is None:
+            filename = os.path.abspath("armourstone_report.pdf")
+        if format.lower() != "pdf":
+            raise ValueError("Only PDF reports are supported. Use format='pdf'.")
+        if not filename.lower().endswith(".pdf"):
+            filename += ".pdf"
 
         if self.cfd.run_cfd:
-            print()
-            print("CFD settings")
-            print("------------")
-            print(f"Case name: {self.cfd_settings.case_name}")
-            print(f"Propeller to slope distance: {self.waterway.d_slope:.2f} m")
-            print(f"Flat bed length: {self.cfd_settings.flat_bed_length:.2f} m")
-            print(f"Domain width: {self.cfd_settings.domain_width:.2f} m")
-            print(f"Simulation type: {self.cfd_settings.simulation_type}")
+            thread = self._cfd_thread
+            if thread is None:
+                raise RuntimeError("CFD is enabled but has not been started. Run CFD before generating a report.")
+            if thread.is_alive():
+                thread.join()
+            if self.cfd_result is None:
+                raise RuntimeError("CFD did not complete successfully. Check the CFD run before generating a report.")
 
-            print()
-            print("CFD results")
-            print("-----------")
-            print(f"Latest time: {self.cfd_summary['latest_time']}")
-            print(f"Max flat bed velocity: {self.cfd_summary['max_flat_bed_velocity']:.4f} m/s")
-            print(f"Max slope velocity: {self.cfd_summary['max_slope_velocity']:.4f} m/s")
-            print(f"Governing velocity: {self.cfd_summary['governing_velocity']:.4f} m/s")
+        inputs = self._report_inputs()
+        details = self._report_details()
+        summary = self._report_summary()
+        text = self._format_report_text(inputs, details, summary)
+
+        import matplotlib.pyplot as plt
+        from matplotlib.backends.backend_pdf import PdfPages
+        from matplotlib.patches import Polygon as MplPolygon
+
+        fig = plt.figure(figsize=(11.7, 8.3))
+        ax_text = fig.add_subplot(1, 2, 1)
+        ax_geom = fig.add_subplot(1, 2, 2)
+
+        ax_text.axis("off")
+        ax_text.text(
+            0,
+            1,
+            text,
+            va="top",
+            ha="left",
+            family="monospace",
+            fontsize=8,
+            wrap=True,
+        )
+
+        self._draw_geometry(ax_geom)
+
+        with PdfPages(filename) as pdf:
+            pdf.savefig(fig, bbox_inches="tight")
+        plt.close(fig)
+
+        return filename
+
+    def _report_inputs(self):
+        return {
+            "Ship": {
+                "Propeller diameter (D_p) [m]": self.ship.D_p,
+                "Propeller vertical position (Z_p) [m]": self.ship.Z_p,
+                "Hull draught [m]": self.ship.draught,
+                "Jet velocity [m/s]": self.ship.jet_velocity,
+            },
+            "Waterway": {
+                "Water depth h [m]": self.waterway.h,
+                "Propeller-to-slope distance [m]": self.waterway.d_slope,
+                "Slope angle beta [deg]": self.waterway.beta,
+                "Armourstone repose angle phi_as [deg]": self.waterway.phi_as,
+                "Flow direction psi_flow [deg]": self.waterway.psi_flow,
+            },
+            "ArmourStone": {
+                "Rock density [kg/m^3]": self.armourStone.density_rock,
+                "Water density [kg/m^3]": self.armourStone.density_water,
+                "Critical mobility psi_cr [-]": self.armourStone.psi_cr,
+                "Stability correction phi_sc [-]": self.armourStone.phi_sc,
+                "Turbulence factor k_t2 [-]": self.armourStone.k_t2,
+                "Roughness height k_s [m]": self.armourStone.k_s,
+                "Manual hydraulic velocity [m/s]": self.cfd.manual_velocity,
+            },
+            "CFD": {
+                "Use CFD": self.cfd.run_cfd,
+                "Simulation type": self.cfd.openfoam_simulation_type,
+                "Left boundary to propeller 2D [m]": self.cfd.cfd_left_boundary_to_propeller_2d,
+                "Left boundary to propeller 3D [m]": self.cfd.cfd_left_boundary_to_propeller_3d,
+                "Domain width 3D [m]": self.cfd.cfd_domain_width_3d,
+                "Cells flat x 2D": self.cfd.cfd_cells_flat_x_2d,
+                "Cells slope x 2D": self.cfd.cfd_cells_slope_x_2d,
+                "Cells z 2D": self.cfd.cfd_cells_z_2d,
+                "Cells flat x 3D": self.cfd.cfd_cells_flat_x_3d,
+                "Cells slope x 3D": self.cfd.cfd_cells_slope_x_3d,
+                "Cells y 3D": self.cfd.cfd_cells_y_3d,
+                "Cells z 3D": self.cfd.cfd_cells_z_3d,
+            },
+        }
+
+    def _report_details(self):
+        return {
+            "Derived parameters": {
+                "Relative buoyant density delta [-]": self.delta,
+                "Velocity profile factor k_h [-]": self.k_h,
+                "Side slope factor k_sl [-]": self.k_sl,
+                "Hydraulic velocity [m/s]": self.hydraulic_velocity,
+                "Required D_n50 [m]": self.required_D_n50,
+                "Required D_n50 [cm]": self.required_D_n50_cm,
+            },
+            "CFD results": {
+                "Latest time [s]": self.cfd_summary["latest_time"],
+                "Max flat bed velocity [m/s]": self.cfd_summary["max_flat_bed_velocity"],
+                "Max slope velocity [m/s]": self.cfd_summary["max_slope_velocity"],
+                "Governing velocity [m/s]": self.cfd_summary["governing_velocity"],
+            },
+        }
+
+    def _report_summary(self):
+        return {
+            "Report generated": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Main output": {
+                "Required D_n50 [m]": self.required_D_n50,
+                "Required D_n50 [cm]": self.required_D_n50_cm,
+            },
+        }
+
+    def _format_report_text(self, inputs, details, summary):
+        lines = [
+            "ArmourStone Assessment Report",
+            "===========================",
+            f"Generated: {summary['Report generated']}",
+            "",
+        ]
+
+        for section, values in inputs.items():
+            lines.append(section)
+            lines.append("-" * len(section))
+            for label, value in values.items():
+                lines.append(f"{label}: {self._format_value(value)}")
+            lines.append("")
+
+        for section, values in details.items():
+            lines.append(section)
+            lines.append("-" * len(section))
+            for label, value in values.items():
+                lines.append(f"{label}: {self._format_value(value)}")
+            lines.append("")
+
+        lines.append("Summary")
+        lines.append("-------")
+        for label, value in summary["Main output"].items():
+            lines.append(f"{label}: {self._format_value(value)}")
+        lines.append("")
+        return "\n".join(lines)
+
+    def _format_value(self, value):
+        if value is None:
+            return "n/a"
+        if isinstance(value, bool):
+            return str(value)
+        if isinstance(value, (int, float)):
+            return f"{value:.4f}" if isinstance(value, float) else str(value)
+        return str(value)
+
+    def _draw_geometry(self, ax):
+        from matplotlib.patches import Polygon as MplPolygon
+
+        h = self.waterway.h
+        d_slope = self.waterway.d_slope
+        width = self.waterway.waterway_width
+        xbed = [0.0, d_slope, d_slope + width]
+        zbed = [-h, -h, 0.0]
+
+        ax.plot([0.0, xbed[-1]], [0.0, 0.0], color="blue", lw=2)
+        ax.plot(xbed, zbed, color="blue", lw=2)
+
+        water_poly = MplPolygon(
+            [(0.0, 0.0), (0.0, -h), (d_slope, -h), (d_slope + width, 0.0)],
+            closed=True,
+            facecolor="lightskyblue",
+            edgecolor="none",
+            alpha=0.3,
+        )
+        ax.add_patch(water_poly)
+
+        ship = MplPolygon(
+            [(-2.0, 0.0), (-2.0, -self.ship.draught), (-0.1, -self.ship.draught), (-0.1, 0.0)],
+            closed=True,
+            facecolor="black",
+            alpha=0.5,
+        )
+        ax.add_patch(ship)
+
+        prop_top = -h + self.ship.Z_p + self.ship.D_p / 2
+        prop_bottom = -h + self.ship.Z_p - self.ship.D_p / 2
+        prop = MplPolygon(
+            [(-0.1, prop_top), (-0.1, prop_bottom), (0.0, prop_bottom), (0.0, prop_top)],
+            closed=True,
+            facecolor="red",
+            alpha=0.7,
+        )
+        ax.add_patch(prop)
+
+        ax.set_title("Geometry sketch")
+        ax.set_xlabel("x [m]")
+        ax.set_ylabel("z [m]")
+        ax.set_aspect("equal", adjustable="box")
+        ax.grid(True, linestyle="--", linewidth=0.5, alpha=0.5)
+        ax.set_xlim(-2.5, max(d_slope + width, 5.0))
+        ax.set_ylim(-max(h, 5.0), 1.0)
 
     @ppc.Attribute
     def cfd_settings(self):
@@ -400,14 +512,6 @@ class ArmourStoneAssessment(ppc.Base):
         if self.required_D_n50 is None:
             return None
         return float(100 * self.required_D_n50)
-
-    @ppc.Attribute
-    def required_D_n50_note(self):
-        if self.cfd.run_cfd and self.cfd_result is None:
-            return "CFD is still running, so D_n50 is unavailable until CFD completes."
-        if self.cfd.run_cfd and self.cfd_result is not None:
-            return "D_n50 is based on CFD-derived governing velocity."
-        return "D_n50 is based on manual velocity because CFD is disabled."
 
 if __name__ == "__main__":
     app = ArmourStoneAssessment()
