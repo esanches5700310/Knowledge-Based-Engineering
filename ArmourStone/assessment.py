@@ -1,4 +1,5 @@
 import threading
+import os
 import warnings
 import numpy as np
 from parapy import core as ppc
@@ -288,10 +289,15 @@ class ArmourStoneAssessment(ppc.Base):
         # Calculate the required stone diameter using Pilarczyk's formula
         D = self.armourStone.phi_sc / self.delta * 0.035 / self.armourStone.psi_cr * self.k_h * self.k_sl**(-1) * self.armourStone.k_t2**2 * self.hydraulic_velocity**2**2 / (2 * g)
         return D
-    
+
     @ppc.Part
-    def geom(self): 
-        return Geometry(waterway=self.waterway, ship=self.ship)
+    def geom(self):
+        return Geometry(
+            waterway=self.waterway,
+            ship=self.ship,
+            cfd_results_dir=self.cfd_results_dir,
+            cfd_left_boundary_to_propeller_2d = self.cfd.cfd_left_boundary_to_propeller_2d
+        )
     
     def report(self):
         """
@@ -408,6 +414,25 @@ class ArmourStoneAssessment(ppc.Base):
         if self.cfd.run_cfd and self.cfd_result is not None:
             return "D_n50 is based on CFD-derived governing velocity."
         return "D_n50 is based on manual velocity because CFD is disabled."
+
+    @ppc.Attribute
+    def armourstone_dir(self):
+        return os.path.dirname(os.path.abspath(__file__))
+
+    @ppc.Attribute
+    def cfd_results_dir(self):
+        case_name = (
+            "case_kbe_2d"
+            if self.cfd.openfoam_simulation_type == "2D"
+            else "case_kbe_3d"
+        )
+
+        return os.path.join(
+            self.armourstone_dir,
+            "output",
+            "cfd_results",
+            case_name
+        )
 
 if __name__ == "__main__":
     app = ArmourStoneAssessment()

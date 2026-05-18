@@ -13,7 +13,7 @@ draught = 7           # Distance from surface to lowest point of the hull. [m]
 ### Waterway variables ###
 
 depth = 10.0                        # Depth of the waterway. [m]
-propeller_to_slope_distance = 20.0  # Horizontal distance to slope from propeller. [m]
+propeller_to_slope_distance = 5.0  # Horizontal distance to slope from propeller. [m]
 beta = 30.0                         # Side slope angle. [deg]
 phi_as = 45.0                       # Angle of repose of the armourstone. [deg]
 psi_flow = 90                       # Angle made by the flow to the upslope direction
