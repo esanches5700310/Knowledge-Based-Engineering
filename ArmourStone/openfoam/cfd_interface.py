@@ -88,6 +88,7 @@ def make_cfd_settings_from_kbe(
             waterway,
             jet_velocity,
             simulation_type="2D",
+            case_name = None,
             propeller_to_slope_distance=20.0,
             left_boundary_to_propeller_2d=20.0,
             left_boundary_to_propeller_3d=5.0,
@@ -116,9 +117,16 @@ def make_cfd_settings_from_kbe(
 
     simulation_type = check_simulation_type(simulation_type)
 
+    if case_name is None or str(case_name).strip() == "":
+        if simulation_type == "2D":
+            case_name = "case_kbe_2d"
+        else:
+            case_name = "case_kbe_3d"
+
+    case_name = str(case_name).strip()
+
     if simulation_type == "2D":
         left_boundary_to_propeller = left_boundary_to_propeller_2d
-        case_name = "case_kbe_2d"
         domain_width = 0.1
 
         cells_flat_x = cells_flat_x_2d
@@ -128,7 +136,6 @@ def make_cfd_settings_from_kbe(
 
     elif simulation_type == "3D":
         left_boundary_to_propeller = left_boundary_to_propeller_3d
-        case_name = "case_kbe_3d"
         domain_width = domain_width_3d
 
         cells_flat_x = cells_flat_x_3d

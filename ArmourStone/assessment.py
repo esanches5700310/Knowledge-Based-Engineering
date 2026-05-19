@@ -5,7 +5,7 @@ import numpy as np
 from parapy import core as ppc
 from parapy.gui import display
 from parapy.gui.widgets import wx
-from objects import Ship, Waterway, ArmourStone
+from objects import Project, Ship, Waterway, ArmourStone
 from geometry import Geometry
 from input import (
     run_cfd,
@@ -87,9 +87,9 @@ class ArmourStoneAssessment(ppc.Base):
     _cfd_thread = None
     cfd_running_flag = ppc.Input(False, doc="Internal CFD running indicator.")
 
-    @ppc.Attribute(settable=True)
-    def cfd_result(self):
-        return self._cfd_result
+    @ppc.Part
+    def project(self):
+        return Project()
 
     @ppc.Part
     def ship(self):
@@ -110,6 +110,10 @@ class ArmourStoneAssessment(ppc.Base):
     @ppc.Part
     def cfd(self):
         return CFDInputs()
+
+    @ppc.Attribute(settable=True)
+    def cfd_result(self):
+        return self._cfd_result
 
     @ppc.action
     def run_cfd_simulation(self):
@@ -210,6 +214,18 @@ class ArmourStoneAssessment(ppc.Base):
 
             self._cfd_thread = threading.Thread(target=self._run_cfd_workflow, daemon=True)
             self._cfd_thread.start()
+
+    @ppc.Attribute
+    def cfd_case_name(self):
+        """Generate a unique CFD case name from the project name, project number and simulation type."""
+        simulation_type = self.cfd.openfoam_simulation_type.upper()
+
+        return (
+            f"case_"
+            f"{self.project.project_name}_"
+            f"{self.project.project_nr}_"
+            f"{simulation_type}"
+        )
 
     @ppc.Attribute
     def cfd_running(self):
@@ -508,6 +524,7 @@ class ArmourStoneAssessment(ppc.Base):
             waterway=self.waterway,
             jet_velocity=self.ship.jet_velocity,
             simulation_type=self.cfd.openfoam_simulation_type,
+            case_name=self.cfd_case_name,
             propeller_to_slope_distance=self.waterway.d_slope,
             left_boundary_to_propeller_2d=self.cfd.cfd_left_boundary_to_propeller_2d,
             left_boundary_to_propeller_3d=self.cfd.cfd_left_boundary_to_propeller_3d,
@@ -580,17 +597,11 @@ class ArmourStoneAssessment(ppc.Base):
 
     @ppc.Attribute
     def cfd_results_dir(self):
-        case_name = (
-            "case_kbe_2d"
-            if self.cfd.openfoam_simulation_type == "2D"
-            else "case_kbe_3d"
-        )
-
         return os.path.join(
             self.armourstone_dir,
             "output",
             "cfd_results",
-            case_name
+            self.cfd_case_name
         )
 
 if __name__ == "__main__":
