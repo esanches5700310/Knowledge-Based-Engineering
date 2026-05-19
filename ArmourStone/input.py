@@ -1,6 +1,6 @@
 ### Project parameters ###
 
-project_name = "Armour Stone Design"
+project_name = "Test"
 project_nr = 1
 
 ### Ship variables ###
