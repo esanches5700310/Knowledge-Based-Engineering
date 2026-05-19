@@ -54,7 +54,6 @@ NEAR_WALL_HEIGHT = 0.10
 # ----------------------------------------------------------------------
 # Paths
 # ----------------------------------------------------------------------
-
 def armourstone_folder():
     """Return the ArmourStone folder."""
     return Path(__file__).resolve().parents[1]
@@ -73,7 +72,6 @@ def case_folder():
 # ----------------------------------------------------------------------
 # Geometry calculations
 # ----------------------------------------------------------------------
-
 def slope_top_z():
     """Height reached by the side slope."""
     return SLOPE_TOP_FRACTION * WATER_DEPTH
@@ -87,6 +85,7 @@ def slope_run():
 def total_length():
     """Total length of the CFD domain."""
     return FLAT_BED_LENGTH + slope_run()
+
 
 def propeller_x_center():
     """x-location of the propeller centre."""
@@ -116,6 +115,7 @@ def propeller_z_max():
 def x_on_slope(z):
     """Return x-coordinate where a horizontal z-level meets the slope."""
     return FLAT_BED_LENGTH + z / WATER_DEPTH * slope_run()
+
 
 def check_inputs():
     """Basic safety checks before generating the case."""
@@ -159,10 +159,10 @@ def check_inputs():
     if propeller_z_max() >= WATER_DEPTH:
         raise ValueError("Propeller is too close to the water surface.")
 
+
 # ----------------------------------------------------------------------
 # Main case generation function
 # ----------------------------------------------------------------------
-
 def create_case():
     """Create the OpenFOAM case from the template."""
     check_inputs()
@@ -430,6 +430,7 @@ boundaryField
     path = case_dir / "0" / "p"
     path.write_text(text)
 
+
 def write_k_file(case_dir):
     """Write 0/k."""
 
@@ -528,6 +529,7 @@ boundaryField
 
     path = case_dir / "0" / "epsilon"
     path.write_text(text)
+
 
 def write_nut_file(case_dir):
     """Write 0/nut."""
@@ -690,6 +692,7 @@ def write_metadata(case_dir):
 
     path = case_dir / "case_metadata.json"
     path.write_text(json.dumps(data, indent=4))
+
 
 def write_topo_set_dict(case_dir):
     """Write system/topoSetDict.
