@@ -1,12 +1,17 @@
 """
 postprocess.py
 
-Reads the OpenFOAM results and extracts:
-- maximum velocity near the flat bed
-- maximum velocity near the upward side slope
-- governing velocity for the armour-stone calculation
+Post-processing script for the 2D OpenFOAM armour-stone CFD case.
 
-This script uses the latest OpenFOAM time folder.
+The script reads the latest OpenFOAM result folder, extracts the velocity field
+and cell-centre coordinates, samples cells close to the flat bed and slope, and
+writes the hydraulic loading quantities required by the armour-stone sizing
+calculation.
+
+Main outputs:
+- flat_bed_velocity_samples.csv
+- slope_velocity_samples.csv
+- hydraulic_loading_summary.json
 """
 
 import csv
@@ -15,14 +20,19 @@ import math
 import re
 from pathlib import Path
 
-
+# -----------------------------------------------------------------------------
+# Case configuration and parsing settings
+# -----------------------------------------------------------------------------
 CASE_NAME = "case_004_slope_jet_bed_slope_large_2d"
+# CASE_NAME is later changed according to input project name
 
 VECTOR_PATTERN = re.compile(
     r"\(\s*([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s*\)"
 )
 
-
+# -----------------------------------------------------------------------------
+# Functions used to define project, case and output paths
+# -----------------------------------------------------------------------------
 def armourstone_folder():
     """Return the ArmourStone folder."""
     return Path(__file__).resolve().parents[1]
@@ -39,7 +49,9 @@ def output_folder():
     folder.mkdir(parents=True, exist_ok=True)
     return folder
 
-
+# -----------------------------------------------------------------------------
+# Functions used to read OpenFOAM result files
+# -----------------------------------------------------------------------------
 def get_latest_time_folder(case_dir):
     """Find the latest numeric OpenFOAM result folder."""
     time_folders = []
@@ -120,7 +132,9 @@ def read_vector_file(path):
 
     return vectors
 
-
+# -----------------------------------------------------------------------------
+# Functions used for geometric and velocity calculations
+# -----------------------------------------------------------------------------
 def vector_magnitude(vector):
     """Return magnitude of a 3D vector."""
     x, y, z = vector
@@ -155,7 +169,9 @@ def distance_to_slope(x, z, metadata):
 
     return numerator / denominator
 
-
+# -----------------------------------------------------------------------------
+# Main post-processing workflow
+# -----------------------------------------------------------------------------
 def extract_results():
     """Extract near-bed and near-slope velocity results."""
     case_dir = case_folder()
@@ -237,7 +253,9 @@ def write_csv(filename, rows):
         writer.writerow(header)
         writer.writerows(rows)
 
-
+# -----------------------------------------------------------------------------
+# Functions used to write output files and print results
+# -----------------------------------------------------------------------------
 def write_summary(summary):
     """Write summary results to JSON."""
     path = output_folder() / "hydraulic_loading_summary.json"

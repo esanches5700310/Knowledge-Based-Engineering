@@ -21,14 +21,19 @@ import math
 import re
 from pathlib import Path
 
-
+# -----------------------------------------------------------------------------
+# Case configuration and parsing settings
+# -----------------------------------------------------------------------------
 CASE_NAME = "case_005_slope_jet_bed_slope_large_3d"
+# CASE_NAME is later changed according to input project name
 
 VECTOR_PATTERN = re.compile(
     r"\(\s*([-+0-9.eE]+)\s+([-+0-9.eE]+)\s+([-+0-9.eE]+)\s*\)"
 )
 
-
+# -----------------------------------------------------------------------------
+# Functions used to define project, case and output paths
+# -----------------------------------------------------------------------------
 def armourstone_folder():
     """Return the ArmourStone folder."""
     return Path(__file__).resolve().parents[1]
@@ -45,7 +50,9 @@ def output_folder():
     folder.mkdir(parents=True, exist_ok=True)
     return folder
 
-
+# -----------------------------------------------------------------------------
+# Functions used to read OpenFOAM result files
+# -----------------------------------------------------------------------------
 def get_latest_time_folder(case_dir):
     """Find the latest numeric OpenFOAM result folder."""
     time_folders = []
@@ -120,7 +127,9 @@ def read_vector_file(path):
 
     return all_vectors[:number_of_vectors]
 
-
+# -----------------------------------------------------------------------------
+# Functions used for geometric and velocity calculations
+# -----------------------------------------------------------------------------
 def vector_magnitude(vector):
     """Return magnitude of a 3D vector."""
     x, y, z = vector
@@ -193,7 +202,9 @@ def sample_location_from_row(row):
         "U_magnitude": row[6],
     }
 
-
+# -----------------------------------------------------------------------------
+# Main post-processing workflow
+# -----------------------------------------------------------------------------
 def extract_results():
     """Extract near-bed and near-slope velocity results."""
     case_dir = case_folder()
@@ -277,7 +288,9 @@ def extract_results():
 
     return summary
 
-
+# -----------------------------------------------------------------------------
+# Functions used to write output files and print results
+# -----------------------------------------------------------------------------
 def write_csv(filename, rows):
     """Write velocity samples to CSV."""
     path = output_folder() / filename
