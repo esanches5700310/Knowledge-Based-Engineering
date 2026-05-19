@@ -43,15 +43,27 @@ class Inputs(ppc.Base):
     """
     Class to do input handling and validation. Passes the validated inputs through to the other classes.
     """
+    # Ship variables
     D_p = ppc.Input(D_p, doc="Diameter of the propeller. [m]")
     Z_p = ppc.Input(Z_p, doc="Propeller position, defined as the distance from the bed to the centre of the propeller. [m]")
     draught = ppc.Input(draught, doc="Distance from surface to lowest point of the hull. [m]")
     jet_velocity = ppc.Input(jet_velocity, doc="Target propeller jet velocity used in OpenFOAM. [m/s]")
+
+    # Waterway variables
     h = ppc.Input(depth, doc="Water depth. [m]")
     d_slope = ppc.Input(propeller_to_slope_distance, doc="Distance to slope. [m]")
     beta = ppc.Input(beta, doc="Side slope angle. [deg]")
     phi_as = ppc.Input(phi_as, doc="Angle of repose of the armourstone. [deg]")
     psi_flow = ppc.Input(psi_flow, doc="Angle made by the flow to the upslope direction. [deg]")
+
+    # Pilarczyk parameters
+    density_rock = ppc.Input(density_rock, doc="Density of the rock used for the armourstone. [kg/m^3]")
+    density_water = ppc.Input(density_water, doc="Density of water. [kg/m^3]")
+    psi_cr = ppc.Input(psi_cr, doc="Critical mobility parameter of the protection element. [-]")
+    phi_sc = ppc.Input(phi_sc, doc="Stability correction factor. [-]")
+    k_t2 = ppc.Input(k_t2, doc="Square of the turbulence factor. [-]")
+    k_s = ppc.Input(k_s, doc="Roughness height of the armourstone. [m]")
+    U = ppc.Input(manual_velocity, doc="Hydraulic loading velocity. This can be replaced by CFD. [m/s]")
 
     @ppc.Attribute
     def _D_p(self):
@@ -132,6 +144,62 @@ class Inputs(ppc.Base):
             raise ValueError("Angle made by the flow to the upslope direction must be positive.")
         return self.psi_flow
     
+    @ppc.Attribute
+    def _density_rock(self):
+        """Density of the rock used for the armourstone. [kg/m^3]"""
+        if self.density_rock <= 0:
+            warn("Invalid rock density", "Density of the rock must be a positive value. Please enter a valid rock density.")
+            raise ValueError("Density of the rock must be positive.")
+        return self.density_rock
+    
+    @ppc.Attribute
+    def _density_water(self):
+        """Density of water. [kg/m^3]"""
+        if self.density_water <= 0:
+            warn("Invalid water density", "Density of water must be a positive value. Please enter a valid water density.")
+            raise ValueError("Density of water must be positive.")
+        return self.density_water
+    
+    @ppc.Attribute
+    def _psi_cr(self):
+        """Critical mobility parameter of the protection element. [-]"""
+        if self.psi_cr < 0:
+            warn("Invalid critical mobility parameter", "Critical mobility parameter must be a positive value. Please enter a valid critical mobility parameter.")
+            raise ValueError("Critical mobility parameter must be positive.")
+        return self.psi_cr
+    
+    @ppc.Attribute
+    def _phi_sc(self):
+        """Stability correction factor. [-]"""
+        if self.phi_sc < 0:
+            warn("Invalid stability correction factor", "Stability correction factor must be a positive value. Please enter a valid stability correction factor.")
+            raise ValueError("Stability correction factor must be positive.")
+        return self.phi_sc
+    
+    @ppc.Attribute
+    def _k_t2(self):
+        """Square of the turbulence factor. [-]"""
+        if self.k_t2 < 0:
+            warn("Invalid turbulence factor", "Square of the turbulence factor must be a positive value. Please enter a valid turbulence factor.")
+            raise ValueError("Square of the turbulence factor must be positive.")
+        return self.k_t2
+    
+    @ppc.Attribute
+    def _k_s(self):
+        """Roughness height of the armourstone. [m]"""
+        if self.k_s < 0:
+            warn("Invalid roughness height", "Roughness height of the armourstone must be a positive value. Please enter a valid roughness height.")
+            raise ValueError("Roughness height of the armourstone must be positive.")
+        return self.k_s
+    
+    @ppc.Attribute
+    def _U(self):
+        """Hydraulic loading velocity. This can be replaced by CFD. [m/s]"""
+        if self.U < 0:
+            warn("Invalid hydraulic loading velocity", "Hydraulic loading velocity must be a positive value. Please enter a valid hydraulic loading velocity.")
+            raise ValueError("Hydraulic loading velocity must be positive.")
+        return self.U
+    
 
 class Ship(ppc.Base):
     inputs = ppc.Input(doc="Reference to the validated Inputs instance.")
@@ -190,8 +258,6 @@ class Waterway(ppc.Base):
         """Water depth. [m]"""
         return self.inputs._h
     
-
-
     @ppc.Attribute
     def beta_rad(self):
         """
@@ -230,10 +296,39 @@ class Waterway(ppc.Base):
 
 
 class ArmourStone(ppc.Base):
-    density_rock = ppc.Input(density_rock, doc="Density of the rock used for the armourstone. [kg/m^3]")
-    density_water = ppc.Input(density_water, doc="Density of water. [kg/m^3]")
-    psi_cr = ppc.Input(psi_cr, doc="Critical mobility parameter of the protection element. [-]")
-    phi_sc = ppc.Input(phi_sc, doc="Stability correction factor. [-]")
-    k_t2 = ppc.Input(k_t2, doc="Square of the turbulence factor. [-]")
-    k_s = ppc.Input(k_s, doc="Roughness height of the armourstone. [m]")
-    U = ppc.Input(manual_velocity, doc="Hydraulic loading velocity. This can be replaced by CFD. [m/s]")
+    inputs = ppc.Input(doc="Reference to the validated Inputs instance.")
+
+    @ppc.Attribute
+    def density_rock(self):
+        """Density of the rock used for the armourstone. [kg/m^3]"""
+        return self.inputs._density_rock
+    
+    @ppc.Attribute
+    def density_water(self):
+        """Density of water. [kg/m^3]"""
+        return self.inputs._density_water
+    
+    @ppc.Attribute
+    def psi_cr(self):
+        """Critical mobility parameter of the protection element. [-]"""
+        return self.inputs._psi_cr
+    
+    @ppc.Attribute
+    def phi_sc(self):
+        """Stability correction factor. [-]"""
+        return self.inputs._phi_sc
+    
+    @ppc.Attribute
+    def k_t2(self):
+        """Square of the turbulence factor. [-]"""
+        return self.inputs._k_t2
+    
+    @ppc.Attribute
+    def k_s(self):
+        """Roughness height of the armourstone. [m]"""
+        return self.inputs._k_s
+    
+    @ppc.Attribute
+    def U(self):
+        """Hydraulic loading velocity. This can be replaced by CFD. [m/s]"""
+        return self.inputs._U
