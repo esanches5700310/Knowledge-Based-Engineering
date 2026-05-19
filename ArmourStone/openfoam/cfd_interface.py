@@ -1,15 +1,17 @@
 """
 cfd_interface.py
 
-Interface between the KBE application and the OpenFOAM workflow.
+Interface between the ParaPy/KBE application and the OpenFOAM workflow.
 
-This file:
-1. receives inputs from the ParaPy/KBE model,
-2. chooses between the 2D and 3D OpenFOAM setup,
-3. creates the CFD case,
-4. runs OpenFOAM through Docker/WSL,
-5. postprocesses the result,
-6. returns the governing velocity to the KBE app.
+This module translates the high-level KBE model inputs into OpenFOAM case
+settings, creates the corresponding CFD case, runs the correct 2D or 3D
+OpenFOAM workflow, post-processes the hydraulic loading results, and returns
+the governing velocity to the armour stone assessment.
+
+The module is intentionally organized as an interface layer. It does not define
+the OpenFOAM mesh dictionaries directly; instead, it passes the selected inputs
+to the 2D or 3D case generator modules and then calls the corresponding runner
+and postprocessor.
 """
 
 from dataclasses import dataclass, asdict
@@ -20,9 +22,17 @@ import subprocess
 import shlex
 
 
+# -----------------------------------------------------------------------------
+# Data container used to pass CFD settings through the workflow
+# -----------------------------------------------------------------------------
+
 @dataclass
 class CFDSettings:
-    """Container for the OpenFOAM scenario inputs."""
+    """Container for all inputs needed to define and run an OpenFOAM case.
+
+    The default values are fallback values. During the normal KBE workflow they
+    are overwritten using inputs from the ParaPy model and input.py.
+    """
 
     # General
     simulation_type: str = "2D"       # "2D" or "3D"
@@ -55,13 +65,29 @@ class CFDSettings:
     near_wall_height: float = 0.10
 
 
+# -----------------------------------------------------------------------------
+# Path and settings file utilities
+# -----------------------------------------------------------------------------
+
 def armourstone_folder():
-    """Return the ArmourStone folder."""
+    """Return the root folder of the ArmourStone application.
+    """
     return Path(__file__).resolve().parents[1]
 
-
 def save_cfd_settings(settings):
-    """Save the settings used for this CFD run."""
+    """Save the CFD settings used for a run as a JSON file.
+
+    Parameters
+    ----------
+    settings : CFDSettings
+        The full set of CFD settings used to create, run, and postprocess the
+        OpenFOAM case.
+
+    Returns
+    -------
+    pathlib.Path
+        Path to the JSON file containing the stored CFD settings.
+    """
     output_dir = armourstone_folder() / "output" / "cfd_settings"
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -72,7 +98,11 @@ def save_cfd_settings(settings):
 
 
 def check_simulation_type(simulation_type):
-    """Check whether the selected OpenFOAM simulation type is valid."""
+    """Check whether the selected OpenFOAM simulation type is valid.
+
+    The workflow only supports the two case-generator branches currently
+    implemented in the app: "2D" and "3D".
+    """
     simulation_type = simulation_type.upper()
 
     if simulation_type not in ["2D", "3D"]:
@@ -82,6 +112,11 @@ def check_simulation_type(simulation_type):
         )
 
     return simulation_type
+
+
+# -----------------------------------------------------------------------------
+# Functions used to create CFD settings from the KBE / ParaPy model
+# -----------------------------------------------------------------------------
 
 def make_cfd_settings_from_kbe(
             ship,
@@ -101,18 +136,15 @@ def make_cfd_settings_from_kbe(
             cells_y_3d=36,
             cells_z_3d=50,
     ):
-    """Create CFD settings from the ParaPy/KBE objects.
+    """Create a CFDSettings object from the ParaPy/KBE input objects.
 
-    waterway.d_slope is interpreted as the distance from the propeller
-    to the slope toe.
+    This function is the main translation step between the KBE model and the
+    OpenFOAM workflow. It receives the ship and waterway objects from ParaPy,
+    combines them with the selected CFD inputs, and produces a single
+    ``CFDSettings`` object.
 
     For both 2D and 3D:
     flat_bed_length = upstream_length + propeller-to-slope distance
-
-    The difference is that the 2D case needs a larger upstream length
-    because the return flow is constrained in the x-z plane. The 3D case
-    can use a shorter upstream length because lateral spreading in y is
-    possible.
     """
 
     simulation_type = check_simulation_type(simulation_type)
@@ -177,8 +209,17 @@ def make_cfd_settings_from_kbe(
     return settings
 
 
+# -----------------------------------------------------------------------------
+# Functions used to apply CFD settings to the OpenFOAM case generators
+# -----------------------------------------------------------------------------
+
 def apply_settings_to_2d_case_generator(settings):
-    """Apply CFDSettings to the 2D case generator."""
+    """Apply CFDSettings to the 2D case generator module.
+
+    The 2D case generator uses module-level variables to write the OpenFOAM
+    dictionaries. This function overwrites those variables with values from the
+    current KBE run before the case is created.
+    """
 
     from openfoam import case_generator
 
@@ -211,7 +252,12 @@ def apply_settings_to_2d_case_generator(settings):
 
 
 def apply_settings_to_3d_case_generator(settings):
-    """Apply CFDSettings to the 3D case generator."""
+    """Apply CFDSettings to the 3D case generator module.
+
+    The 3D case generator follows the same structure as the 2D generator, but
+    also receives the domain width, centreline propeller y-position, and y-cell
+    count required for the 3D OpenFOAM case.
+    """
 
     from openfoam import case_generator_3D
 
@@ -245,8 +291,17 @@ def apply_settings_to_3d_case_generator(settings):
     return case_generator_3D
 
 
+# -----------------------------------------------------------------------------
+# Function used to create the OpenFOAM case folder
+# -----------------------------------------------------------------------------
+
 def create_openfoam_case(settings):
-    """Create either the 2D or 3D OpenFOAM case."""
+    """Create the OpenFOAM case folder for the selected simulation type.
+
+    Depending on ``settings.simulation_type``, this function selects the 2D or
+    3D case generator, applies the current CFD settings to it, and calls the
+    generator's ``create_case`` function.
+    """
 
     if settings.simulation_type == "2D":
         case_generator = apply_settings_to_2d_case_generator(settings)
@@ -260,8 +315,22 @@ def create_openfoam_case(settings):
     return case_generator.create_case()
 
 
+# -----------------------------------------------------------------------------
+# Functions used to run the complete OpenFOAM workflow
+# -----------------------------------------------------------------------------
+
 def run_openfoam_workflow(settings):
-    """Run the complete OpenFOAM workflow and return the CFD summary."""
+    """Run the full CFD workflow and return the hydraulic loading summary.
+
+    The workflow consists of four steps:
+    1. validate the selected simulation type;
+    2. save the CFD settings for traceability;
+    3. generate the OpenFOAM case folder;
+    4. run OpenFOAM and postprocess the results.
+
+    On Windows, OpenFOAM is launched through WSL. On Linux/WSL, the runner is
+    called directly from Python.
+    """
 
     settings.simulation_type = check_simulation_type(settings.simulation_type)
 
@@ -281,8 +350,24 @@ def run_openfoam_workflow(settings):
     return summary
 
 
+def get_governing_velocity(settings):
+    """Run the complete CFD workflow (function above) and return only the governing velocity.
+
+    This helper is useful when the KBE app only needs the scalar velocity value
+    for the armour stone sizing rule, rather than the full postprocessing
+    summary dictionary.
+    """
+    summary = run_openfoam_workflow(settings)
+    return summary["governing_velocity"]
+
+
+# -----------------------------------------------------------------------------
+# Functions used to run OpenFOAM locally or through WSL
+# -----------------------------------------------------------------------------
+
 def run_openfoam_runner_locally(settings):
-    """Run the correct OpenFOAM runner directly from Linux/WSL."""
+    """Run the correct OpenFOAM runner directly from Linux or WSL.
+    """
 
     if settings.simulation_type == "2D":
         from openfoam import runner
@@ -298,31 +383,13 @@ def run_openfoam_runner_locally(settings):
         raise ValueError(f"Unsupported simulation type: {settings.simulation_type}")
 
 
-def postprocess_results(settings):
-    """Run the correct postprocessor and return the summary dictionary."""
-
-    if settings.simulation_type == "2D":
-        from openfoam import postprocess
-        postprocess.CASE_NAME = settings.case_name
-        return postprocess.extract_results()
-
-    elif settings.simulation_type == "3D":
-        from openfoam import postprocess_3D
-        postprocess_3D.CASE_NAME = settings.case_name
-        return postprocess_3D.extract_results()
-
-    else:
-        raise ValueError(f"Unsupported simulation type: {settings.simulation_type}")
-
-
-def get_governing_velocity(settings):
-    """Run CFD and return only the governing velocity."""
-    summary = run_openfoam_workflow(settings)
-    return summary["governing_velocity"]
-
-
 def windows_path_to_wsl_path(path):
-    """Convert a Windows path to a WSL path."""
+    """Convert a Windows path to the corresponding WSL path.
+
+    The OpenFOAM runner is executed inside WSL when the ParaPy app is launched
+    from Windows. This conversion is required so that the WSL shell can access
+    the same ArmourStone project folder.
+    """
     result = subprocess.run(
         ["wsl", "wslpath", "-a", str(path)],
         text=True,
@@ -340,7 +407,12 @@ def windows_path_to_wsl_path(path):
 
 
 def run_openfoam_runner_in_wsl(case_name, simulation_type):
-    """Run the correct OpenFOAM runner inside WSL from Windows Python."""
+    """Run the correct OpenFOAM runner inside WSL from Windows Python.
+
+    This function builds the WSL command used by the ParaPy application on
+    Windows. It selects the 2D or 3D runner, passes the case name as a command
+    line argument, and raises an error if the WSL/OpenFOAM command fails.
+    """
 
     simulation_type = check_simulation_type(simulation_type)
 
@@ -375,3 +447,30 @@ def run_openfoam_runner_in_wsl(case_name, simulation_type):
     if result.returncode != 0:
         print(result.stderr)
         raise RuntimeError("OpenFOAM run in WSL failed.")
+
+
+# -----------------------------------------------------------------------------
+# Function used to postprocess OpenFOAM results
+# -----------------------------------------------------------------------------
+
+def postprocess_results(settings):
+    """Run the correct postprocessor and return the summary dictionary.
+
+    The postprocessor extracts the near-wall velocities from the latest
+    OpenFOAM result folder and writes the CSV/JSON files used by the KBE app.
+    This function selects the 2D or 3D postprocessor based on the active CFD
+    settings.
+    """
+
+    if settings.simulation_type == "2D":
+        from openfoam import postprocess
+        postprocess.CASE_NAME = settings.case_name
+        return postprocess.extract_results()
+
+    elif settings.simulation_type == "3D":
+        from openfoam import postprocess_3D
+        postprocess_3D.CASE_NAME = settings.case_name
+        return postprocess_3D.extract_results()
+
+    else:
+        raise ValueError(f"Unsupported simulation type: {settings.simulation_type}")
