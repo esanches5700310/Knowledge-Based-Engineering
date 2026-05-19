@@ -1,13 +1,22 @@
+### IMPORTS ###
+# Standard library imports
 import datetime
 import os
 import threading
 import numpy as np
 from parapy import core as ppc
-from parapy.gui import display
 from parapy.gui.widgets import wx
-from objects import Project, Ship, Waterway, ArmourStone, Inputs
-from geometry import Geometry
-from warning import warn
+
+# Import core
+from app_core.geometry import Geometry
+from app_core.obj_armourstone import ArmourStone
+from app_core.obj_inputs import Inputs
+from app_core.obj_project import Project
+from app_core.obj_ship import Ship
+from app_core.obj_waterway import Waterway
+from app_core.warning import warn
+
+# Import CFD inputs and workflow
 from input import (
     run_cfd,
     manual_velocity,
@@ -25,6 +34,8 @@ from input import (
 )
 from openfoam.cfd_interface import make_cfd_settings_from_kbe, run_openfoam_workflow
 
+### CLASSES ###
+# CFD settings and results classes to group related inputs and outputs for the GUI and report generation.
 class CFDInputs(ppc.Base):
     """User-facing CFD and hydraulic settings."""
     run_cfd = ppc.Input(run_cfd, doc="If True, use CFD-derived velocity rather than manual velocity.")
@@ -62,7 +73,7 @@ class CFDInputs(ppc.Base):
             raise ValueError("Invalid OpenFOAM simulation type. Choose '2D' or '3D'.")
         return value
 
-
+# Grouped output class for GUI results display.
 class AssessmentResults(ppc.Base):
     """Grouped output values for the GUI results section."""
     assessment = ppc.Input()
@@ -91,7 +102,7 @@ class AssessmentResults(ppc.Base):
         """Expose the CFD status message from the main assessment for the GUI results panel."""
         return self.assessment.cfd_status_message
 
-
+# Main assessment class that ties together all components and logic.
 class ArmourStoneAssessment(ppc.Base):
     _cfd_result = None
     _cfd_thread = None
@@ -612,8 +623,3 @@ class ArmourStoneAssessment(ppc.Base):
             "cfd_results",
             self.cfd_case_name
         )
-
-if __name__ == "__main__":
-    app = ArmourStoneAssessment()
-    app.evaluate_all(max_depth=1)
-    display(app, view="front", autodraw=True)
