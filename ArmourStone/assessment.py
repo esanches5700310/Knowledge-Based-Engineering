@@ -29,7 +29,7 @@ class CFDInputs(ppc.Base):
     """User-facing CFD and hydraulic settings."""
     run_cfd = ppc.Input(run_cfd, doc="If True, use CFD-derived velocity rather than manual velocity.")
     manual_velocity = ppc.Input(manual_velocity, doc="Backup/design velocity used when CFD is not run or while CFD is pending. [m/s]")
-    openfoam_simulation_type = ppc.Input(
+    _openfoam_simulation_type = ppc.Input(
         openfoam_simulation_type,
         doc="OpenFOAM simulation type. Choose '2D' or '3D'."
     )
@@ -52,6 +52,15 @@ class CFDInputs(ppc.Base):
     cfd_cells_slope_x_3d = ppc.Input(cfd_cells_slope_x_3d, doc="Cell count along the slope in 3D CFD.")
     cfd_cells_y_3d = ppc.Input(cfd_cells_y_3d, doc="Spanwise cell count in 3D CFD.")
     cfd_cells_z_3d = ppc.Input(cfd_cells_z_3d, doc="Vertical cell count in 3D CFD.")
+
+    @ppc.Attribute
+    def openfoam_simulation_type(self):
+        """Validate the OpenFOAM simulation type input."""
+        value = self._openfoam_simulation_type.strip().upper()
+        if value not in {"2D", "3D"}:
+            warn("Invalid simulation type", "Invalid OpenFOAM simulation type. Choose '2D' or '3D'.")
+            raise ValueError("Invalid OpenFOAM simulation type. Choose '2D' or '3D'.")
+        return value
 
 
 class AssessmentResults(ppc.Base):
