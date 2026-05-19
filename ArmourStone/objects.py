@@ -5,8 +5,8 @@ from input import *
 
 class Project(ppc.Base):
 
-    _project_name = ppc.Input(project_name, doc="Project name used for file and folder naming. Spaces are converted to underscores.")
-    _project_nr = ppc.Input(project_nr, doc="Project number used for file and folder naming. Spaces are converted to underscores.")
+    input_project_name = ppc.Input(project_name, doc="Project name used for file and folder naming. Spaces are converted to underscores.")
+    input_project_nr = ppc.Input(project_nr, doc="Project number used for file and folder naming. Spaces are converted to underscores.")
 
     def _fix_name(self, raw, field):
         value = str(raw).strip()
@@ -28,7 +28,7 @@ class Project(ppc.Base):
 
         :return: Project name.
         """
-        name = self._fix_name(self._project_name, "Project name")
+        name = self._fix_name(self.input_project_name, "Project name")
         return name
     
     @ppc.Attribute
@@ -38,7 +38,7 @@ class Project(ppc.Base):
 
         :return: Project number.
         """
-        nr = self._fix_name(self._project_nr, "Project number")
+        nr = self._fix_name(self.input_project_nr, "Project number")
         return nr
 
 
