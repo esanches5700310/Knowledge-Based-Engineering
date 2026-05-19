@@ -7,6 +7,7 @@ from parapy.gui import display
 from parapy.gui.widgets import wx
 from objects import Project, Ship, Waterway, ArmourStone, Inputs
 from geometry import Geometry
+from warning import warn
 from input import (
     run_cfd,
     manual_velocity,
@@ -101,11 +102,11 @@ class ArmourStoneAssessment(ppc.Base):
 
     @ppc.Part
     def waterway(self):
-        return Waterway()
+        return Waterway(inputs=self.inputs)
 
     @ppc.Part
     def armourStone(self):
-        return ArmourStone()
+        return ArmourStone(inputs=self.inputs)
 
     @ppc.Part
     def results(self):
@@ -246,6 +247,7 @@ class ArmourStoneAssessment(ppc.Base):
         if self.cfd_result is None:
             return "Pending"
         if self.cfd_result and self.cfd_result.get("error"):
+            warn("CFD error", f"Error in CFD run: {self.cfd_result.get('error')}")
             return f"Error: {self.cfd_result.get('error')}"
         return "Completed"
 
@@ -313,20 +315,17 @@ class ArmourStoneAssessment(ppc.Base):
         """
         Generate and save the report on button press.
         """
-        if filename is None:
-            filename = os.path.abspath("armourstone_report.pdf")
-        if format.lower() != "pdf":
-            raise ValueError("Only PDF reports are supported. Use format='pdf'.")
-        if not filename.lower().endswith(".pdf"):
-            filename += ".pdf"
+        filename = self.project.project_name + self.project.project_nr + "_report.pdf"
 
         if self.cfd.run_cfd:
             thread = self._cfd_thread
             if thread is None:
+                warn("CFD not started", "CFD is enabled but has not been started. Run CFD before generating a report.")
                 raise RuntimeError("CFD is enabled but has not been started. Run CFD before generating a report.")
             if thread.is_alive():
                 thread.join()
             if self.cfd_result is None:
+                warn("CFD incomplete", "CFD did not complete successfully. Check the CFD run before generating a report.")
                 raise RuntimeError("CFD did not complete successfully. Check the CFD run before generating a report.")
 
         inputs = self._report_inputs()

@@ -37,7 +37,7 @@ class Project(ppc.Base):
             warn("Invalid project number", "Project number must be an integer. Please enter a valid project number.")
             raise ValueError("Project number must be an integer.")
 
-        return self.input_project_nr
+        return str(self.input_project_nr)
 
 class Inputs(ppc.Base):
     """
@@ -257,6 +257,26 @@ class Waterway(ppc.Base):
     def h(self):
         """Water depth. [m]"""
         return self.inputs._h
+    
+    @ppc.Attribute
+    def d_slope(self):
+        """Distance to slope. [m]"""
+        return self.inputs._d_slope
+    
+    @ppc.Attribute
+    def beta(self):
+        """Side slope angle. [deg]"""
+        return self.inputs._beta
+    
+    @ppc.Attribute
+    def phi_as(self):
+        """Angle of repose of the armourstone. [deg]"""
+        return self.inputs._phi_as
+    
+    @ppc.Attribute
+    def psi_flow(self):
+        """Angle made by the flow to the upslope direction. [deg]"""
+        return self.inputs._psi_flow
     
     @ppc.Attribute
     def beta_rad(self):
