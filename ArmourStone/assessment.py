@@ -5,7 +5,7 @@ import numpy as np
 from parapy import core as ppc
 from parapy.gui import display
 from parapy.gui.widgets import wx
-from objects import Project, Ship, Waterway, ArmourStone
+from objects import Project, Ship, Waterway, ArmourStone, Inputs
 from geometry import Geometry
 from input import (
     run_cfd,
@@ -90,10 +90,14 @@ class ArmourStoneAssessment(ppc.Base):
     @ppc.Part
     def project(self):
         return Project()
+    
+    @ppc.Part
+    def inputs(self):
+        return Inputs()
 
     @ppc.Part
     def ship(self):
-        return Ship()
+        return Ship(inputs=self.inputs)
 
     @ppc.Part
     def waterway(self):
@@ -304,16 +308,10 @@ class ArmourStoneAssessment(ppc.Base):
             cfd_left_boundary_to_propeller_2d = self.cfd.cfd_left_boundary_to_propeller_2d
         )
     
-    def report(self, filename=None, format="pdf"):
+    @ppc.action
+    def report(self):
         """
-        Generate and save the report.
-
-        Parameters
-        ----------
-        filename : str | None
-            Output file path. If None, a default report file will be created.
-        format : str
-            Output format, currently only 'pdf' is supported.
+        Generate and save the report on button press.
         """
         if filename is None:
             filename = os.path.abspath("armourstone_report.pdf")

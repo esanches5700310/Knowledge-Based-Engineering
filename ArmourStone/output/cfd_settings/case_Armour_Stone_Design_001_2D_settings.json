@@ -10,7 +10,7 @@
     "propeller_center_z": 5.0,
     "propeller_diameter": 1.0,
     "propeller_zone_length": 0.8,
-    "jet_velocity": 3.0,
+    "jet_velocity": 100,
     "kinematic_viscosity": 1e-06,
     "cells_flat_x": 240,
     "cells_slope_x": 80,

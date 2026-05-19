@@ -1,7 +1,7 @@
 ### Project parameters ###
 
 project_name = "Armour Stone Design"
-project_nr = "001"
+project_nr = 1
 
 ### Ship variables ###
 
