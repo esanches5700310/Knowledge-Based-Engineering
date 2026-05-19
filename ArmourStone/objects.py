@@ -223,31 +223,6 @@ class Ship(ppc.Base):
     def jet_velocity(self):
         """Target propeller jet velocity used in OpenFOAM. [m/s]"""
         return self.inputs._jet_velocity
-    
-    @ppc.Attribute
-    def h(self):
-        """Water depth. [m]"""
-        return self.inputs._h
-    
-    @ppc.Attribute
-    def d_slope(self):
-        """Distance to slope. [m]"""
-        return self.inputs._d_slope
-    
-    @ppc.Attribute
-    def beta(self):
-        """Side slope angle. [deg]"""
-        return self.inputs._beta
-    
-    @ppc.Attribute
-    def phi_as(self):
-        """Angle of repose of the armourstone. [deg]"""
-        return self.inputs._phi_as
-    
-    @ppc.Attribute
-    def psi_flow(self):
-        """Angle made by the flow to the upslope direction. [deg]"""
-        return self.inputs._psi_flow
 
 
 class Waterway(ppc.Base):
