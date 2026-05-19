@@ -1,9 +1,0 @@
-{
-    "case_name": "case_Test_3_2D",
-    "latest_time": "3418",
-    "number_of_flat_bed_samples": 240,
-    "number_of_slope_samples": 395,
-    "max_flat_bed_velocity": 1.973705648950882,
-    "max_slope_velocity": 1.7951584548281525,
-    "governing_velocity": 1.973705648950882
-}

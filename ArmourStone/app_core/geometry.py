@@ -526,7 +526,8 @@ class VelocityFieldVisualization(ppc.Base):
                 "velocity_ratio": round(
                     self._velocity_ratio(row["U_magnitude"]),
                     3
-                )
+                ),
+                "color": self._velocity_color(round(float(row["U_magnitude"]), 4))
             }
             for row in self.velocity_data
         ]
