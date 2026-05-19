@@ -307,7 +307,10 @@ class ArmourStoneAssessment(ppc.Base):
             waterway=self.waterway,
             ship=self.ship,
             cfd_results_dir=self.cfd_results_dir,
-            cfd_left_boundary_to_propeller_2d = self.cfd.cfd_left_boundary_to_propeller_2d
+            cfd_left_boundary_to_propeller_2d=self.cfd.cfd_left_boundary_to_propeller_2d,
+            cfd_left_boundary_to_propeller_3d=self.cfd.cfd_left_boundary_to_propeller_3d,
+            cfd_domain_width_3d=self.cfd.cfd_domain_width_3d,
+            openfoam_simulation_type=self.cfd.openfoam_simulation_type
         )
     
     @ppc.action

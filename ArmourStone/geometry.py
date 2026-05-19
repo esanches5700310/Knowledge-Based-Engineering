@@ -3,8 +3,337 @@ import pandas as pd
 
 from parapy import core as ppc
 from parapy.core import child
-from parapy.geom import Polygon, Sphere, Box, translate, XOY
+from parapy.geom import Polygon, Sphere, Box, Cylinder, translate, rotate, XOY
 
+"""
+geometry.py
+
+This module defines the ParaPy geometry used to visualize the armour stone
+assessment case. It generates the waterway domain, ship (simple) representation,
+propeller geometry and optional CFD velocity-field visualization.
+
+The geometry adapts automatically to the selected OpenFOAM simulation type:
+- for a 2D CFD case, the waterway is shown as a cross-sectional polygon;
+- for a 3D CFD case, the waterway is shown as a three-dimensional domain
+  using the specified CFD domain width.
+"""
+
+
+class Geometry(ppc.Base):
+    """ParaPy geometry for the waterway, ship, propeller and CFD velocity field."""
+
+    waterway = ppc.Input()
+    ship = ppc.Input()
+
+    cfd_left_boundary_to_propeller_2d = ppc.Input(
+        0.0,
+        doc="Distance from the left CFD boundary to the propeller for the 2D case."
+    )
+
+    openfoam_simulation_type = ppc.Input(
+        "2D",
+        doc="OpenFOAM simulation type. Choose '2D' or '3D'."
+    )
+
+    cfd_left_boundary_to_propeller_3d = ppc.Input(
+        1.0,
+        doc="Distance from the left CFD boundary to the propeller for the 3D case."
+    )
+
+    cfd_domain_width_3d = ppc.Input(
+        12.0,
+        doc="Width/depth of the 3D CFD domain. [m]"
+    )
+
+    cfd_results_dir = ppc.Input(
+        None,
+        doc="Folder containing the CFD CSV result files."
+    )
+
+    show_velocity_field = ppc.Input(
+        True,
+        doc="Show the imported CFD velocity field as a coloured point cloud."
+    )
+
+    velocity_field_max_points = ppc.Input(
+        300,
+        doc="Maximum number of CFD velocity points shown in the GUI."
+    )
+
+    velocity_field_point_radius = ppc.Input(
+        0.05,
+        doc="Radius of the CFD velocity point-cloud markers."
+    )
+
+    # ---------------------
+    # WATERWAY GEOMETRY
+    #---------------------
+    @ppc.Attribute
+    def waterway_surface_points(self):
+        """Generate either a 2D waterway polygon or a 3D waterway surface set."""
+
+        x0 = -self.cfd_left_boundary_to_propeller
+        x1 = self.waterway.d_slope
+        x2 = self.waterway.d_slope + self.waterway.waterway_width
+
+        y0 = 0.0
+        y1 = self.gui_domain_width
+
+        z0 = -self.waterway.h
+        z1 = 0.0
+
+        # 2D case: one cross-section polygon
+        if not self.is_3d_geometry:
+            return [
+                [
+                    (x0, y0, z0),
+                    (x1, y0, z0),
+                    (x2, y0, z1),
+                    (x0, y0, z1),
+                ]
+            ]
+
+        # 3D case: several surface polygons forming the waterway volume
+        return [
+            # front side, y = 0
+            [
+                (x0, y0, z0),
+                (x1, y0, z0),
+                (x2, y0, z1),
+                (x0, y0, z1),
+            ],
+
+            # back side, y = domain width
+            [
+                (x0, y1, z0),
+                (x0, y1, z1),
+                (x2, y1, z1),
+                (x1, y1, z0),
+            ],
+
+            # flat bed
+            [
+                (x0, y0, z0),
+                (x0, y1, z0),
+                (x1, y1, z0),
+                (x1, y0, z0),
+            ],
+
+            # sloped bed
+            [
+                (x1, y0, z0),
+                (x1, y1, z0),
+                (x2, y1, z1),
+                (x2, y0, z1),
+            ],
+
+            # top / free surface
+            [
+                (x0, y0, z1),
+                (x2, y0, z1),
+                (x2, y1, z1),
+                (x0, y1, z1),
+            ],
+
+            # far-left boundary
+            [
+                (x0, y0, z0),
+                (x0, y0, z1),
+                (x0, y1, z1),
+                (x0, y1, z0),
+            ],
+        ]
+
+    @ppc.Part
+    def waterway_shape(self):
+        return Polygon(
+            self.waterway_surface_points[child.index],
+            quantify=len(self.waterway_surface_points),
+            color="blue"
+        )
+
+    # ---------------------
+    # Propeller GEOMETRY
+    # ---------------------
+    @ppc.Part(parse=False)
+    def propeller_shape(self):
+        """Generate the propeller geometry.
+
+        2D:
+            Simple rectangular actuator region.
+
+        3D:
+            Circular disk with diameter equal to ship.D_p,
+            centred in the CFD domain width.
+        """
+
+        if self.is_3d_geometry:
+            return Cylinder(
+                radius=0.5 * self.ship.D_p,
+                height=self.propeller_disk_thickness,
+                position=rotate(
+                    translate(
+                        XOY,
+                        "x", -0.5 * self.propeller_disk_thickness,
+                        "y", 0.5 * self.cfd_domain_width_3d,
+                        "z", -self.waterway.h + self.ship.Z_p
+                    ),
+                    "y", 90,
+                    deg=True
+                ),
+                color="red"
+            )
+
+        return Box(
+            width=0.2,
+            length=self.propeller_box_y_length,
+            height=self.ship.D_p,
+            position=translate(
+                XOY,
+                "x", -0.2,
+                "y", self.propeller_y_position,
+                "z", -self.waterway.h + self.ship.Z_p - self.ship.D_p / 2
+            ),
+            color="red"
+        )
+
+    # ---------------------
+    # Ship GEOMETRY
+    # ---------------------
+    @ppc.Part
+    def ship_shape(self):
+        return Box(
+            width=1.9,
+            length=self.ship_box_y_length,
+            height=self.ship.draught,
+            position=translate(
+                XOY,
+                "x", -2.0,
+                "y", self.ship_y_position,
+                "z", -self.ship.draught
+            ),
+            color="black"
+        )
+
+    # ---------------------
+    # Velocity Field GEOMETRY
+    # ---------------------
+    @ppc.Part
+    def velocity_field(self):
+        return VelocityFieldVisualization(
+            csv_files=self.velocity_csv_files,
+            waterway=self.waterway,
+            cfd_x_offset=self.cfd_x_offset,
+            max_points=self.velocity_field_max_points,
+            point_radius=self.velocity_field_point_radius,
+            show=self.show_velocity_field
+        )
+
+    # ----------------------------------------------------------------------
+    # Helper Functions for reading the velocities from CFD csv data
+    # ----------------------------------------------------------------------
+    @ppc.Attribute
+    def flat_bed_velocity_csv(self):
+        """Default OpenFOAM post-processing CSV for the flat bed."""
+        if self.cfd_results_dir is None:
+            return None
+
+        return os.path.join(
+            self.cfd_results_dir,
+            "flat_bed_velocity_samples.csv"
+        )
+
+    @ppc.Attribute
+    def slope_velocity_csv(self):
+        """Default OpenFOAM post-processing CSV for the slope."""
+        if self.cfd_results_dir is None:
+            return None
+
+        return os.path.join(
+            self.cfd_results_dir,
+            "slope_velocity_samples.csv"
+        )
+
+    @ppc.Attribute
+    def velocity_csv_files(self):
+        """CSV files used for the ParaView-like velocity-field visualization."""
+        return [
+            filename
+            for filename in [
+                self.flat_bed_velocity_csv,
+                self.slope_velocity_csv
+            ]
+            if filename is not None
+        ]
+
+    def _read_velocity_csv(self, filename):
+        """Read a velocity CSV file when it exists."""
+        if filename is None or not os.path.exists(filename):
+            return None
+
+        return pd.read_csv(filename)
+
+    @ppc.Attribute
+    def cfd_x_offset(self):
+        """
+        Offset between CFD x-coordinate and GUI x-coordinate.
+
+        If the slope CSV is available, the first slope x-coordinate is mapped
+        to the start of the ParaPy slope at x = waterway.d_slope. This keeps
+        the imported CFD points aligned with the waterway geometry.
+        """
+        df_slope = self._read_velocity_csv(self.slope_velocity_csv)
+
+        if df_slope is None or df_slope.empty or "x" not in df_slope.columns:
+            return 0.0
+
+        return float(df_slope["x"].min() - self.waterway.d_slope)
+
+    # ---------------------------------------------------------------------------------
+    # Helper functions to generate a 3D geometry in case the CFD is run for a 3D case
+    # ---------------------------------------------------------------------------------
+    @ppc.Attribute
+    def is_3d_geometry(self):
+        return self.openfoam_simulation_type.upper() == "3D"
+
+    @ppc.Attribute
+    def cfd_left_boundary_to_propeller(self):
+        if self.is_3d_geometry:
+            return self.cfd_left_boundary_to_propeller_3d
+        return self.cfd_left_boundary_to_propeller_2d
+
+    @ppc.Attribute
+    def gui_domain_width(self):
+        if self.is_3d_geometry:
+            return self.cfd_domain_width_3d
+        return 0.0
+
+    @ppc.Attribute
+    def propeller_box_y_length(self):
+        return 0.4
+
+    @ppc.Attribute
+    def propeller_y_position(self):
+        if self.is_3d_geometry:
+            return 0.5 * self.cfd_domain_width_3d - 0.5 * self.propeller_box_y_length
+        else:
+            return -0.2
+
+    @ppc.Attribute
+    def ship_box_y_length(self):
+        return 0.4
+
+    @ppc.Attribute
+    def ship_y_position(self):
+        if self.is_3d_geometry:
+            return 0.5 * self.cfd_domain_width_3d - 0.5 * self.ship_box_y_length
+        else:
+            return -0.2
+
+    @ppc.Attribute
+    def propeller_disk_thickness(self):
+        """Visual thickness of the circular propeller disk in 3D. [m]"""
+        return 0.2
 
 class VelocityFieldVisualization(ppc.Base):
     """Visualize post-processed CFD velocity samples in the ParaPy GUI.
@@ -48,7 +377,7 @@ class VelocityFieldVisualization(ppc.Base):
     )
 
     red_ratio = ppc.Input(
-        0.90,
+        0.85,
         doc="Velocity/max_velocity ratio from which points are coloured red."
     )
 
@@ -194,142 +523,3 @@ class VelocityFieldVisualization(ppc.Base):
             }
             for row in self.velocity_data
         ]
-
-
-class Geometry(ppc.Base):
-    """ParaPy geometry for the waterway, ship, propeller and CFD velocity field."""
-
-    waterway = ppc.Input()
-    ship = ppc.Input()
-
-    cfd_left_boundary_to_propeller_2d = ppc.Input(
-        0.0,
-        doc="Distance from the left CFD boundary to the propeller for the 2D case."
-    )
-
-    cfd_results_dir = ppc.Input(
-        None,
-        doc="Folder containing the CFD CSV result files."
-    )
-
-    show_velocity_field = ppc.Input(
-        True,
-        doc="Show the imported CFD velocity field as a coloured point cloud."
-    )
-
-    velocity_field_max_points = ppc.Input(
-        300,
-        doc="Maximum number of CFD velocity points shown in the GUI."
-    )
-
-    velocity_field_point_radius = ppc.Input(
-        0.05,
-        doc="Radius of the CFD velocity point-cloud markers."
-    )
-
-    @ppc.Attribute
-    def flat_bed_velocity_csv(self):
-        """Default OpenFOAM post-processing CSV for the flat bed."""
-        if self.cfd_results_dir is None:
-            return None
-
-        return os.path.join(
-            self.cfd_results_dir,
-            "flat_bed_velocity_samples.csv"
-        )
-
-    @ppc.Attribute
-    def slope_velocity_csv(self):
-        """Default OpenFOAM post-processing CSV for the slope."""
-        if self.cfd_results_dir is None:
-            return None
-
-        return os.path.join(
-            self.cfd_results_dir,
-            "slope_velocity_samples.csv"
-        )
-
-    @ppc.Attribute
-    def velocity_csv_files(self):
-        """CSV files used for the ParaView-like velocity-field visualization."""
-        return [
-            filename
-            for filename in [
-                self.flat_bed_velocity_csv,
-                self.slope_velocity_csv
-            ]
-            if filename is not None
-        ]
-
-    def _read_velocity_csv(self, filename):
-        """Read a velocity CSV file when it exists."""
-        if filename is None or not os.path.exists(filename):
-            return None
-
-        return pd.read_csv(filename)
-
-    @ppc.Attribute
-    def cfd_x_offset(self):
-        """
-        Offset between CFD x-coordinate and GUI x-coordinate.
-
-        If the slope CSV is available, the first slope x-coordinate is mapped
-        to the start of the ParaPy slope at x = waterway.d_slope. This keeps
-        the imported CFD points aligned with the waterway geometry.
-        """
-        df_slope = self._read_velocity_csv(self.slope_velocity_csv)
-
-        if df_slope is None or df_slope.empty or "x" not in df_slope.columns:
-            return 0.0
-
-        return float(df_slope["x"].min() - self.waterway.d_slope)
-
-    @ppc.Part
-    def waterway_shape(self):
-        return Polygon([
-            (-self.cfd_left_boundary_to_propeller_2d, 0, -self.waterway.h),
-            (self.waterway.d_slope, 0, -self.waterway.h),
-            (self.waterway.d_slope + self.waterway.waterway_width, 0, 0),
-            (-self.cfd_left_boundary_to_propeller_2d, 0, 0)
-        ], color="blue")
-
-    @ppc.Part
-    def propeller_shape(self):
-        return Box(
-            width=0.2,
-            length=0.4,
-            height=self.ship.D_p,
-            position=translate(
-                XOY,
-                "x", -0.2,
-                "y", -0.2,
-                "z", -self.waterway.h + self.ship.Z_p - self.ship.D_p / 2
-            ),
-            color="red"
-        )
-
-    @ppc.Part
-    def ship_shape(self):
-        return Box(
-            width=1.9,
-            length=0.4,
-            height=self.ship.draught,
-            position=translate(
-                XOY,
-                "x", -2.0,
-                "y", -0.2,
-                "z", -self.ship.draught
-            ),
-            color="black"
-        )
-
-    @ppc.Part
-    def velocity_field(self):
-        return VelocityFieldVisualization(
-            csv_files=self.velocity_csv_files,
-            waterway=self.waterway,
-            cfd_x_offset=self.cfd_x_offset,
-            max_points=self.velocity_field_max_points,
-            point_radius=self.velocity_field_point_radius,
-            show=self.show_velocity_field
-        )
