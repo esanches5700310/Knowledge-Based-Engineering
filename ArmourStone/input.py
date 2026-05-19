@@ -1,8 +1,7 @@
 ### Project parameters ###
 
 project_name = "Armour Stone Design"
-project_nr = "ASD-001"
-output_path = "output/report.txt"
+project_nr = "001"
 
 ### Ship variables ###
 

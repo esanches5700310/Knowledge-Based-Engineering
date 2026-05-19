@@ -1,6 +1,46 @@
 import numpy as np
 from parapy import core as ppc
+import re
 from input import *
+
+class Project(ppc.Base):
+
+    _project_name = ppc.Input(project_name, doc="Project name used for file and folder naming. Spaces are converted to underscores.")
+    _project_nr = ppc.Input(project_nr, doc="Project number used for file and folder naming. Spaces are converted to underscores.")
+
+    def _fix_name(self, raw, field):
+        value = str(raw).strip()
+        value = value.replace(" ", "_")
+        if not value:
+            raise ValueError(f"{field} must not be empty.")
+        if re.search(r"[^A-Za-z0-9_.-]", value):
+            invalid = sorted(set(re.findall(r"[^A-Za-z0-9_.-]", value)))
+            raise ValueError(
+                f"{field} contains invalid characters: {' '.join(invalid)}. "
+                "Only letters, digits, underscores, hyphens and dots are allowed."
+            )
+        return value
+    
+    @ppc.Attribute
+    def project_name(self):
+        """
+        Generate a project name based on the project name and number.
+
+        :return: Project name.
+        """
+        name = self._fix_name(self._project_name, "Project name")
+        return name
+    
+    @ppc.Attribute
+    def project_nr(self):
+        """
+        Generate a project number based on the project name and number.
+
+        :return: Project number.
+        """
+        nr = self._fix_name(self._project_nr, "Project number")
+        return nr
+
 
 class Ship(ppc.Base):
     D_p = ppc.Input(D_p, doc="Diameter of the propeller. [m]")
