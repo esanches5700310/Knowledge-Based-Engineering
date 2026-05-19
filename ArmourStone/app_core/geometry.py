@@ -24,6 +24,7 @@ class Geometry(ppc.Base):
 
     waterway = ppc.Input()
     ship = ppc.Input()
+    cfd_status = ppc.Input()
 
     cfd_left_boundary_to_propeller_2d = ppc.Input(
         0.0,
@@ -226,7 +227,8 @@ class Geometry(ppc.Base):
             cfd_x_offset=self.cfd_x_offset,
             max_points=self.velocity_field_max_points,
             point_radius=self.velocity_field_point_radius,
-            show=self.show_velocity_field
+            show=self.show_velocity_field,
+            vf_cfd_status = self.cfd_status
         )
 
     # ----------------------------------------------------------------------
@@ -346,6 +348,7 @@ class VelocityFieldVisualization(ppc.Base):
     Expected CSV columns:
         x, y, z, U_magnitude
     """
+    vf_cfd_status = ppc.Input()
 
     csv_files = ppc.Input(
         [],
@@ -394,6 +397,10 @@ class VelocityFieldVisualization(ppc.Base):
     @ppc.Attribute
     def raw_velocity_dataframe(self):
         """Read and combine all available CFD velocity CSV files."""
+        if self.vf_cfd_status == "completed":
+            # Do absolutely nothing, but hopefully this triggers a refresh
+            pass
+
         dataframes = []
         required_columns = {"x", "y", "z", "U_magnitude"}
 

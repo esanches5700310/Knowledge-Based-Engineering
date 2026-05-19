@@ -3,6 +3,7 @@
 import datetime
 import os
 import threading
+from pathlib import Path
 import numpy as np
 from parapy import core as ppc
 from parapy.gui.widgets import wx
@@ -330,7 +331,8 @@ class ArmourStoneAssessment(ppc.Base):
             cfd_left_boundary_to_propeller_2d=self.cfd.cfd_left_boundary_to_propeller_2d,
             cfd_left_boundary_to_propeller_3d=self.cfd.cfd_left_boundary_to_propeller_3d,
             cfd_domain_width_3d=self.cfd.cfd_domain_width_3d,
-            openfoam_simulation_type=self.cfd.openfoam_simulation_type
+            openfoam_simulation_type=self.cfd.openfoam_simulation_type,
+            cfd_status=self.cfd_status_message,
         )
     
     @ppc.action
@@ -346,7 +348,8 @@ class ArmourStoneAssessment(ppc.Base):
                 warn("CFD not started", "CFD is enabled but has not been started. Run CFD before generating a report.")
                 raise RuntimeError("CFD is enabled but has not been started. Run CFD before generating a report.")
             if thread.is_alive():
-                thread.join()
+                warn("CFD still running", "CFD is still running. Wait for CFD to finish before generating a report.")
+                raise RuntimeError("CFD is still running. Wait for CFD to finish before generating a report.")
             if self.cfd_result is None:
                 warn("CFD incomplete", "CFD did not complete successfully. Check the CFD run before generating a report.")
                 raise RuntimeError("CFD did not complete successfully. Check the CFD run before generating a report.")
@@ -613,7 +616,7 @@ class ArmourStoneAssessment(ppc.Base):
 
     @ppc.Attribute
     def armourstone_dir(self):
-        return os.path.dirname(os.path.abspath(__file__))
+        return Path(__file__).resolve().parents[1]
 
     @ppc.Attribute
     def cfd_results_dir(self):
