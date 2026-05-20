@@ -462,7 +462,7 @@ class ArmourStoneAssessment(ppc.Base):
             },
         }
 
-    def _format_report_text(self, inputs, details, summary):
+    def _format_report_text(self, inputs, details, summary, foamfile):
         lines = [
             "ArmourStone Assessment Report",
             "===========================",
@@ -489,6 +489,14 @@ class ArmourStoneAssessment(ppc.Base):
         for label, value in summary["Main output"].items():
             lines.append(f"{label}: {self._format_value(value)}")
         lines.append("")
+
+        for section, values in foamfile.items():
+            lines.append(section)
+            lines.append("-" * len(section))
+            for label, value in values.items():
+                lines.append(f"{label}: {self._format_value(value)}")
+            lines.append("")
+
         return "\n".join(lines)
 
     def _format_value(self, value):
