@@ -340,7 +340,7 @@ class ArmourStoneAssessment(ppc.Base):
         """
         Generate and save the report on button press.
         """
-        filename = "output/" + self.project.project_name + "_" + self.project.project_nr + "_report.pdf"
+        filename = "output/" + self.project.project_name + "_" + self.project.project_nr + "_" + self.cfd.openfoam_simulation_type + "_report.pdf"
 
         if self.cfd.run_cfd:
             thread = self._cfd_thread
