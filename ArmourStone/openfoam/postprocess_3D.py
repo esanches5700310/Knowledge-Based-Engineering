@@ -281,7 +281,7 @@ def extract_results():
     }
 
     write_csv("flat_bed_velocity_samples_3D.csv", flat_bed_rows)
-    write_csv("slope_velocity_samples_3D.csv", slope_rows)
+    write_csv("slope_velocity_samples.csv", slope_rows)
     write_summary(summary)
 
     print_summary(summary)
@@ -305,7 +305,7 @@ def write_csv(filename, rows):
 
 def write_summary(summary):
     """Write summary results to JSON."""
-    path = output_folder() / "hydraulic_loading_summary_3D.json"
+    path = output_folder() / "hydraulic_loading_summary.json"
     path.write_text(json.dumps(summary, indent=4))
 
 
