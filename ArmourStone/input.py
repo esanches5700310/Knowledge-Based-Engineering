@@ -36,7 +36,7 @@ jet_velocity = 3.0          # Target propeller jet velocity used in OpenFOAM. [m
 
 ### CFD simulation selection ###
 
-openfoam_simulation_type = "2D"   # Choose "2D" or "3D"
+openfoam_simulation_type = "3D"   # Choose "2D" or "3D"
 
 # Distance from left boundary to propeller centre
 # This is larger in 2D because the return flow is constrained in the x-z plane.

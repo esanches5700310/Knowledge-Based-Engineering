@@ -1,0 +1,38 @@
+{
+    "case_name": "case_Test_1_3D",
+    "dimension": "3D",
+    "latest_time": "2400",
+    "number_of_flat_bed_samples": 6480,
+    "number_of_slope_samples": 7020,
+    "max_flat_bed_velocity": 0.6872212274981336,
+    "max_slope_velocity": 1.2396359167046953,
+    "governing_velocity": 1.2396359167046953,
+    "governing_region": "slope",
+    "max_flat_bed_location": {
+        "x": 3.78333,
+        "y": 1.83333,
+        "z": 0.1,
+        "Ux": 0.660291,
+        "Uy": 0.190298,
+        "Uz": -0.00868804,
+        "U_magnitude": 0.6872212274981336
+    },
+    "max_slope_location": {
+        "x": 12.2059,
+        "y": 6.16667,
+        "z": 3.64714,
+        "Ux": 1.09163,
+        "Uy": -0.0335523,
+        "Uz": 0.586443,
+        "U_magnitude": 1.2396359167046953
+    },
+    "governing_location": {
+        "x": 12.2059,
+        "y": 6.16667,
+        "z": 3.64714,
+        "Ux": 1.09163,
+        "Uy": -0.0335523,
+        "Uz": 0.586443,
+        "U_magnitude": 1.2396359167046953
+    }
+}
